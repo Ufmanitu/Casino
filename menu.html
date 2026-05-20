@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <title>Let It Ride Casino</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #1a0033, #000);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 50px 0 10px;
+            font-size: 56px;
+            color: gold;
+            text-shadow: 0 0 15px gold;
+            animation: glow 2s infinite alternate;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px gold, 0 0 20px rgba(255,215,0,0.3); }
+            to   { text-shadow: 0 0 30px gold, 0 0 60px rgba(255,215,0,0.5); }
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 28px;
+            width: 92%;
+            max-width: 1200px;
+            margin-bottom: 60px;
+        }
+
+        .card {
+            height: 230px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255,255,255,0.35),
+                transparent
+            );
+            transform: translateX(-100%);
+            transition: transform 0.5s;
+        }
+
+        .card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .card:hover {
+            transform: scale(1.06) translateY(-4px);
+        }
+
+        .icon {
+            font-size: 64px;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .subtitle-card {
+            font-size: 13px;
+            opacity: 0.75;
+            margin-top: 5px;
+        }
+
+        /* game-specific gradients */
+        .blackjack {
+            background: linear-gradient(145deg, #00c6ff, #0052cc);
+            box-shadow: 0 8px 40px rgba(0,120,255,0.4);
+        }
+        .blackjack:hover { box-shadow: 0 12px 60px rgba(0,180,255,0.7); }
+
+        .roulette {
+            background: linear-gradient(145deg, #ff512f, #dd2476);
+            box-shadow: 0 8px 40px rgba(255,50,100,0.4);
+        }
+        .roulette:hover { box-shadow: 0 12px 60px rgba(255,50,100,0.7); }
+
+        .slots {
+            background: linear-gradient(145deg, #f7971e, #ffd200);
+            box-shadow: 0 8px 40px rgba(255,180,0,0.4);
+        }
+        .slots:hover { box-shadow: 0 12px 60px rgba(255,200,0,0.7); }
+
+        .plinko {
+            background: linear-gradient(145deg, #8e2de2, #4a00e0);
+            box-shadow: 0 8px 40px rgba(120,0,255,0.4);
+        }
+        .plinko:hover { box-shadow: 0 12px 60px rgba(140,0,255,0.7); }
+
+        .poker {
+            background: linear-gradient(145deg, #11998e, #38ef7d);
+            box-shadow: 0 8px 40px rgba(40,220,150,0.35);
+        }
+        .poker:hover { box-shadow: 0 12px 60px rgba(40,220,150,0.65); }
+
+        .mines {
+            background: linear-gradient(145deg, #b91c1c, #450a0a);
+            box-shadow: 0 8px 40px rgba(185,28,28,0.4);
+        }
+        .mines:hover { box-shadow: 0 12px 60px rgba(220,38,38,0.7); }
+
+        .crash {
+            background: linear-gradient(145deg, #ea580c, #7c2d12);
+            box-shadow: 0 8px 40px rgba(234,88,12,0.4);
+        }
+        .crash:hover { box-shadow: 0 12px 60px rgba(249,115,22,0.7); }
+
+        .dice {
+            background: linear-gradient(145deg, #0e7490, #164e63);
+            box-shadow: 0 8px 40px rgba(14,116,144,0.4);
+        }
+        .dice:hover { box-shadow: 0 12px 60px rgba(6,182,212,0.7); }
+
+        .coming-soon {
+            background: linear-gradient(145deg, #2b2b3a, #5b5b73);
+            box-shadow: 0 8px 40px rgba(120,120,160,0.22);
+            cursor: default;
+        }
+        .coming-soon:hover { transform: none; box-shadow: 0 8px 40px rgba(120,120,160,0.22); }
+
+        /* Loader overlay */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, #12002b, #000);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 9999;
+        }
+        #loader.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .spinner {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 6px solid rgba(255,255,255,0.1);
+            border-top: 6px solid #ff00cc;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 25px #ff00cc;
+        }
+        .loading-text {
+            margin-top: 20px;
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: gold;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes pulse  { 0%,100%{opacity:.4} 50%{opacity:1} }
+    </style>
+</head>
+<body>
+
+<h1>🎰 Let It Ride Casino</h1>
+<div class="subtitle">Choose your game</div>
+
+<div class="menu">
+    <div class="card blackjack" onclick="goToGame('blackjack')">
+        <div class="icon">🂡</div>
+        <div class="title">Blackjack</div>
+        <div class="subtitle-card">21 vagy semmi</div>
+    </div>
+
+    <div class="card roulette" onclick="goToGame('roulette')">
+        <div class="icon">🎯</div>
+        <div class="title">Rulett</div>
+        <div class="subtitle-card">Piros vagy fekete?</div>
+    </div>
+
+    <div class="card slots" onclick="goToGame('slotmachine')">
+        <div class="icon">🎰</div>
+        <div class="title">Slots</div>
+        <div class="subtitle-card">Jackpot vadászat</div>
+    </div>
+
+    <div class="card plinko" onclick="goToGame('plinko')">
+        <div class="icon">🔮</div>
+        <div class="title">Plinko</div>
+        <div class="subtitle-card">Ejtsd le a labdát!</div>
+    </div>
+
+    <div class="card poker" onclick="goToGame('poker')">
+        <div class="icon">♠️</div>
+        <div class="title">Poker</div>
+        <div class="subtitle-card">Blöff vagy all-in</div>
+    </div>
+
+    <div class="card mines" onclick="goToGame('mines')">
+        <div class="icon">💣</div>
+        <div class="title">Mines</div>
+        <div class="subtitle-card">Kerüld az aknákat!</div>
+    </div>
+
+    <div class="card crash" onclick="goToGame('crash')">
+        <div class="icon">🚀</div>
+        <div class="title">Crash</div>
+        <div class="subtitle-card">Mikor szállsz ki?</div>
+    </div>
+
+    <div class="card dice" onclick="goToGame('dice')">
+        <div class="icon">🎲</div>
+        <div class="title">Dice</div>
+        <div class="subtitle-card">Dobj és nyerj!</div>
+    </div>
+
+    <div class="card coming-soon" onclick="goToGame('under_construction')">
+        <div class="icon">✨</div>
+        <div class="title">Coming Soon</div>
+        <div class="subtitle-card">Új játékok hamarosan</div>
+    </div>
+
+    <div class="card coming-soon" onclick="goToGame('under_construction')">
+        <div class="icon">✨</div>
+        <div class="title">Coming Soon</div>
+        <div class="subtitle-card">Új játékok hamarosan</div>
+    </div>
+
+    <div class="card coming-soon" onclick="goToGame('under_construction')">
+        <div class="icon">✨</div>
+        <div class="title">Coming Soon</div>
+        <div class="subtitle-card">Új játékok hamarosan</div>
+    </div>
+
+    <div class="card coming-soon" onclick="goToGame('under_construction')">
+        <div class="icon">✨</div>
+        <div class="title">Coming Soon</div>
+        <div class="subtitle-card">Új játékok hamarosan</div>
+    </div>
+</div>
+
+<div id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading game...</div>
+</div>
+
+<script>
+function goToGame(game) {
+    document.getElementById("loader").classList.add("active");
+    setTimeout(() => {
+        window.location.href = `${game}.html`;
+    }, 1000);
+}
+</script>
+</body>
+</html>

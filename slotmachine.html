@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Slots — Neon Casino</title>
+<style>
+  :root{
+    --bg:#081023;
+    --panel:#071827;
+    --accent:#ffb74d;
+    --glass: rgba(255,255,255,0.04);
+    --card:#f5f9ff;
+    --muted:#9fb0c8;
+    --reel-w: 200px;
+    --reel-h: 330px;
+    --sym-h: 110px;
+    --gap:16px;
+    --gold: #f0c040;
+  }
+
+  html,body{
+    height:100%;margin:0;
+    font-family:Inter,Segoe UI,system-ui,Arial;
+    background: radial-gradient(circle at top, #1a0033, #07071a);
+    color:var(--card);
+  }
+
+  /* Back button - matches blackjack/roulette */
+  .back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 18px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, gold, orange);
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255,200,0,0.7);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    z-index: 999;
+  }
+  .back-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255,200,0,1);
+  }
+
+  .wrap{
+    width:100%;max-width:1100px;margin:0 auto;
+    padding:80px 22px 40px;box-sizing:border-box;
+  }
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:22px;flex-wrap:wrap;gap:12px;
+  }
+  .header-left h1{
+    font-size:26px;margin:0;font-weight:800;
+    color:gold;text-shadow:0 0 15px rgba(255,215,0,0.4);
+    letter-spacing:2px;
+  }
+  .header-left .sub{color:var(--muted);font-size:13px;margin-top:2px}
+
+  /* Balance + bet strip */
+  .stats-strip{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .stat-box{
+    background:#12122a;
+    border:1px solid rgba(120,90,255,0.2);
+    border-radius:10px;
+    padding:9px 16px;
+    min-width:130px;
+  }
+  .stat-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5a5a8a;margin-bottom:2px}
+  .stat-val{font-size:18px;font-weight:800;color:var(--gold)}
+  .bet-row-s{display:flex;align-items:center;gap:6px}
+  .xbtn{
+    width:28px;height:28px;
+    border:1px solid rgba(120,90,255,0.3);
+    background:rgba(80,60,180,.12);color:#aaa;
+    border-radius:6px;cursor:pointer;font-size:18px;
+    font-family:inherit;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .xbtn:hover{background:rgba(100,80,200,.28);color:#fff}
+
+  /* MACHINE */
+  .machine{
+    background: linear-gradient(180deg,#0a0f1e 0%,#060c18 100%);
+    padding:24px;border-radius:20px;display:flex;gap:22px;align-items:center;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.02);
+    position:relative; overflow:hidden;
+    border:1px solid rgba(120,90,255,0.12);
+  }
+
+  /* REELS */
+  .reels{
+    display:flex;gap:var(--gap);
+    padding:10px;border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    position:relative;overflow:visible;
+  }
+  .reels .sweep {
+    position:absolute; left:-20%; top:0; width:140%; height:100%;
+    pointer-events:none; mix-blend-mode: screen; opacity:0;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 55%, rgba(255,255,255,0) 100%);
+    transform: translateX(-100%);
+  }
+  .reels.sweep-active .sweep {
+    animation: sweepAcross 1200ms ease-in-out forwards;
+  }
+  @keyframes sweepAcross {
+    0%{transform:translateX(-100%);opacity:0}
+    10%{opacity:0.9}
+    50%{transform:translateX(0%);opacity:0.95}
+    100%{transform:translateX(100%);opacity:0}
+  }
+
+  .reel{
+    width:var(--reel-w);height:var(--reel-h);
+    border-radius:12px;overflow:hidden;position:relative;
+    background: radial-gradient(120% 60% at 50% 20%, rgba(255,255,255,0.03), transparent 20%),
+                linear-gradient(180deg,#0a1828,#060f1a);
+    box-shadow: inset 0 8px 30px rgba(0,0,0,0.7), 0 12px 24px rgba(0,0,0,0.6);
+    border:1px solid rgba(255,255,255,0.04);
+  }
+  .reel::after{
+    content:"";position:absolute;left:0;top:calc(50% - var(--sym-h)/2);width:100%;
+    height:var(--sym-h);pointer-events:none;
+    box-shadow: 0 0 60px rgba(255,255,255,0.02) inset;
+    border-top:1px solid rgba(255,255,255,0.04);
+    border-bottom:1px solid rgba(0,0,0,0.5);
+  }
+  .strip{position:absolute;left:0;top:0;width:100%;}
+  .symbol{
+    height:var(--sym-h);display:flex;align-items:center;justify-content:center;
+    font-size:54px;user-select:none;color:white;
+    text-shadow:0 4px 14px rgba(0,0,0,0.7);
+  }
+  .reel .rings{
+    position:absolute;inset:-10px;border-radius:16px;pointer-events:none;
+    background: conic-gradient(from 200deg at 50% 50%, rgba(255,120,80,0.06), transparent 20% 40%, rgba(80,200,255,0.04));
+    mix-blend-mode:screen;opacity:0.9;
+    transition:transform 600ms ease,opacity 400ms ease;
+  }
+  .reel.glow .rings{transform:scale(1.06);opacity:1;}
+  .reel .center-flash{
+    position:absolute;left:0;top:calc(50% - var(--sym-h)/2);width:100%;height:var(--sym-h);
+    pointer-events:none;border-radius:4px;opacity:0;transform:scale(0.95);
+    background:radial-gradient(circle at 50% 50%, rgba(255,255,255,0.14), rgba(255,200,80,0.06) 40%, transparent 60%);
+  }
+  .reel.flash .center-flash{animation:centerFlash 420ms cubic-bezier(.2,.9,.2,1);}
+  @keyframes centerFlash{
+    0%{opacity:0;transform:scale(0.95)}
+    30%{opacity:1;transform:scale(1.02)}
+    100%{opacity:0;transform:scale(1.15)}
+  }
+  .screen-flash{
+    position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:linear-gradient(180deg, rgba(255,240,180,0.06), rgba(255,120,80,0.04));
+    transition:opacity 320ms ease;z-index:40;
+  }
+  .screen-flash.active{opacity:1;animation:screenPulse 520ms ease;}
+  @keyframes screenPulse{
+    0%{opacity:0;transform:scale(0.98)}
+    40%{opacity:1;transform:scale(1.01)}
+    100%{opacity:0;transform:scale(1)}
+  }
+
+  /* CONTROLS */
+  .controls{width:300px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px}
+  .panel{width:100%;display:flex;flex-direction:column;gap:14px;align-items:center}
+
+  /* LEVER */
+  .lever-wrap{width:140px;height:280px;display:flex;align-items:flex-end;justify-content:center;position:relative;}
+  .lever-base{
+    width:110px;height:44px;
+    background:linear-gradient(180deg,#0f1b23,#07121a);border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.7),inset 0 2px 0 rgba(255,255,255,0.02);
+    position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .lever-pivot{
+    position:absolute;top:-32px;width:18px;height:18px;border-radius:50%;
+    background:linear-gradient(180deg,#c9c9c9,#8a8a8a);
+    box-shadow:0 4px 12px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .lever-arm{
+    position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+    width:20px;height:190px;border-radius:12px;
+    transform-origin:50% 88%;
+    background:linear-gradient(180deg,#2b1f17,#8a5b3a);
+    box-shadow:0 10px 24px rgba(0,0,0,0.6),inset 0 2px 0 rgba(255,255,255,0.04);
+    transition:transform 260ms cubic-bezier(.2,.9,.2,1);
+    display:flex;align-items:flex-start;justify-content:center;
+  }
+  .lever-knob{
+    position:absolute;top:-42px;width:60px;height:60px;border-radius:50%;
+    background:radial-gradient(circle at 28% 25%,#ffd6a4,#b86b31 60%);
+    box-shadow:0 8px 24px rgba(0,0,0,0.7),inset 0 2px 0 rgba(255,255,255,0.18);
+    transition:transform 180ms ease;
+  }
+  .lever-arm.pulled{transform:rotate(32deg) translateY(8px);}
+  .lever-arm.pulled .lever-knob{transform:translate(10px,6px) rotate(10deg);}
+
+  /* SPIN BUTTON */
+  .spin-btn{
+    width:100%;padding:14px 20px;border-radius:12px;border:none;
+    font-weight:800;font-size:16px;cursor:pointer;letter-spacing:1px;
+    background:linear-gradient(180deg,#f0c040,#e09a20);
+    color:#050a10;
+    box-shadow:0 0 30px rgba(240,192,64,0.25);
+    transition:all .15s;
+  }
+  .spin-btn:hover:not(:disabled){box-shadow:0 0 40px rgba(240,192,64,0.5);}
+  .spin-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+  /* Result info */
+  .result-box{
+    width:100%;background:#12122a;
+    border:1px solid rgba(120,90,255,0.2);
+    border-radius:10px;padding:10px 14px;text-align:center;
+  }
+  .result-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5a5a8a;margin-bottom:3px}
+  .result-val{font-size:16px;font-weight:800;color:#5a5a8a;transition:color .3s}
+
+  /* result popup overlay */
+  .result-popup{
+    position:absolute;left:50%;top:12%;transform:translateX(-50%);
+    padding:14px 28px;border-radius:12px;
+    background:linear-gradient(90deg,rgba(255,200,60,0.12),rgba(255,80,80,0.06));
+    color:#fff;font-size:20px;font-weight:800;letter-spacing:0.6px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.6);
+    opacity:0;pointer-events:none;
+  }
+  .result-popup.show{animation:popupShow 900ms cubic-bezier(.2,.9,.2,1) forwards;}
+  @keyframes popupShow{
+    0%{opacity:0;transform:translateX(-50%) scale(0.75)}
+    60%{opacity:1;transform:translateX(-50%) scale(1.06)}
+    100%{opacity:1;transform:translateX(-50%) scale(1)}
+  }
+  #confettiCanvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60;}
+
+  @media(max-width:900px){
+    .machine{flex-direction:column;align-items:center}
+    .controls{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<a href="menu.html" class="back-btn">← Menu</a>
+
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <h1>🎰 Slot Machine</h1>
+      <div class="sub">Jackpot vadászat — húzd a kart!</div>
+    </div>
+    <div class="stats-strip">
+      <div class="stat-box">
+        <div class="stat-lbl">Balance</div>
+        <div class="stat-val" id="balDisplay">$1,000.00</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Bet amount</div>
+        <div class="bet-row-s">
+          <button class="xbtn" id="betDown">−</button>
+          <span class="stat-val" id="betDisplay" style="min-width:52px;text-align:center">$10</span>
+          <button class="xbtn" id="betUp">+</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="machine" id="machine">
+    <div class="reels" id="reelsContainer" role="application" aria-label="Slot reels">
+      <div class="sweep"></div>
+    </div>
+
+    <div class="controls">
+      <div class="panel">
+        <div class="lever-wrap" title="Húzd meg a kart">
+          <div class="lever-base" id="leverBase">
+            <div class="lever-pivot"></div>
+            <div class="lever-arm" id="leverArm">
+              <div class="lever-knob" id="leverKnob"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="spin-btn" id="spinBtn">SPIN</button>
+
+        <div class="result-box">
+          <div class="result-lbl">Last result</div>
+          <div class="result-val" id="resultDisplay">—</div>
+        </div>
+
+        <div style="font-size:11px;color:#5a5a8a;text-align:center;line-height:1.5">
+          3× match = Jackpot (10×)<br>
+          2× match = Win (3×)<br>
+          Press Space or Enter to spin
+        </div>
+      </div>
+    </div>
+
+    <div class="result-popup" id="resultPopup" aria-live="polite"></div>
+    <div class="screen-flash" id="screenFlash"></div>
+    <canvas id="confettiCanvas" width="1100" height="500"></canvas>
+  </div>
+</div>
+
+<script>
+(() => {
+  const symbols = ['🍒','🍋','🔔','⭐','🍇','7️⃣','🍀','💎'];
+  const REELS = 3, VISIBLE = 3, SYM_H = 110, MIN_CYCLES = 4, MAX_CYCLES = 9;
+  const BETS = [1,5,10,25,50,100,250,500];
+  let betIdx = 2, balance = 1000;
+
+  // UI refs
+  const balDisplay    = document.getElementById('balDisplay');
+  const betDisplay    = document.getElementById('betDisplay');
+  const resultDisplay = document.getElementById('resultDisplay');
+  const reelsContainer= document.getElementById('reelsContainer');
+  const spinBtn       = document.getElementById('spinBtn');
+  const leverArm      = document.getElementById('leverArm');
+  const resultPopup   = document.getElementById('resultPopup');
+  const confettiCanvas= document.getElementById('confettiCanvas');
+  const machine       = document.getElementById('machine');
+  const screenFlash   = document.getElementById('screenFlash');
+  const ctx           = confettiCanvas.getContext('2d');
+
+  function updUI(){
+    balDisplay.textContent = '$'+balance.toFixed(2);
+    betDisplay.textContent = '$'+BETS[betIdx];
+  }
+  document.getElementById('betDown').onclick = ()=>{ if(betIdx>0){betIdx--;updUI();} };
+  document.getElementById('betUp').onclick   = ()=>{ if(betIdx<BETS.length-1){betIdx++;updUI();} };
+
+  let spinning = false;
+  const reels = [];
+
+  function buildReels(){
+    reelsContainer.innerHTML='';
+    const sweep=document.createElement('div'); sweep.className='sweep';
+    reelsContainer.appendChild(sweep);
+    for(let r=0;r<REELS;r++){
+      const reel=document.createElement('div'); reel.className='reel';
+      const centerFlash=document.createElement('div'); centerFlash.className='center-flash';
+      const rings=document.createElement('div'); rings.className='rings';
+      const strip=document.createElement('div'); strip.className='strip';
+      reel.appendChild(strip); reel.appendChild(rings); reel.appendChild(centerFlash);
+      reelsContainer.appendChild(reel);
+      const repeats=16;
+      for(let i=0;i<repeats;i++) for(const s of symbols){
+        const node=document.createElement('div'); node.className='symbol'; node.textContent=s; strip.appendChild(node);
+      }
+      strip.style.transition='none'; strip.style.transform='translateY(0px)';
+      reels.push({el:reel,strip,total:repeats*symbols.length});
+    }
+  }
+  buildReels();
+
+  function randInt(max){ const b=new Uint32Array(1); crypto.getRandomValues(b); return b[0]%max; }
+  const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+
+  function pullLeverAnim(){ leverArm.classList.add('pulled'); setTimeout(()=>leverArm.classList.remove('pulled'),380); }
+
+  function startSweep(){
+    reelsContainer.classList.add('sweep-active');
+    setTimeout(()=>reelsContainer.classList.remove('sweep-active'),1400);
+  }
+
+  function reelFlash(idx){
+    const r=reels[idx]; r.el.classList.add('flash','glow');
+    setTimeout(()=>r.el.classList.remove('flash'),520);
+    setTimeout(()=>r.el.classList.remove('glow'),900);
+  }
+
+  function doScreenFlash(){
+    screenFlash.classList.add('active');
+    setTimeout(()=>screenFlash.classList.remove('active'),540);
+  }
+
+  function spinReel(idx){
+    return new Promise(resolve=>{
+      const r=reels[idx];
+      const targetSymbol=randInt(symbols.length);
+      const cycles=MIN_CYCLES+randInt(MAX_CYCLES-MIN_CYCLES+1);
+      const posIndex=cycles*symbols.length+targetSymbol;
+      const centerRow=Math.floor(VISIBLE/2);
+      const targetPx=-(posIndex-centerRow)*SYM_H;
+      const base=1400+idx*220, variance=randInt(700), duration=base+variance;
+      r.strip.style.transition=`transform ${duration}ms cubic-bezier(0.2,0.9,0.2,1)`;
+      void r.strip.offsetWidth;
+      r.strip.style.transform=`translateY(${targetPx}px)`;
+      const onEnd=(ev)=>{
+        if(ev.propertyName!=='transform') return;
+        r.strip.removeEventListener('transitionend',onEnd);
+        const visibleIndex=targetSymbol%symbols.length;
+        const normalizedPosIndex=symbols.length+visibleIndex;
+        const normalizedPx=-(normalizedPosIndex-centerRow)*SYM_H;
+        r.strip.style.transition='none';
+        r.strip.style.transform=`translateY(${normalizedPx}px)`;
+        reelFlash(idx);
+        setTimeout(()=>resolve({symbol:symbols[visibleIndex],reel:idx}),40);
+      };
+      r.strip.addEventListener('transitionend',onEnd);
+    });
+  }
+
+  function evaluate(syms){
+    const counts={};
+    for(const s of syms) counts[s]=(counts[s]||0)+1;
+    let max=0,sym='';
+    for(const k in counts) if(counts[k]>max){max=counts[k];sym=k;}
+    if(max===REELS) return {type:'JACKPOT',mult:10,text:`JACKPOT! ${sym} × ${REELS}`};
+    if(max===REELS-1) return {type:'WIN',mult:3,text:`Win! Two ${sym}`};
+    return {type:'LOSE',mult:0,text:'No win — try again!'};
+  }
+
+  function showResultPopup(text,tone='info'){
+    resultPopup.textContent=text;
+    resultPopup.classList.remove('show'); void resultPopup.offsetWidth; resultPopup.classList.add('show');
+    if(tone==='jack') resultPopup.style.background='linear-gradient(90deg,rgba(255,220,80,0.18),rgba(255,60,60,0.08))';
+    else if(tone==='win') resultPopup.style.background='linear-gradient(90deg,rgba(160,240,120,0.12),rgba(120,220,120,0.02))';
+    else resultPopup.style.background='linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))';
+    setTimeout(()=>resultPopup.classList.remove('show'),1800);
+  }
+
+  // Confetti
+  class Confetti{
+    constructor(ctx,w,h){this.ctx=ctx;this.w=w;this.h=h;this.p=[];this.running=false;}
+    launch(amount=80){for(let i=0;i<amount;i++) this.p.push(this._make()); if(!this.running)this._run();}
+    _make(){
+      const cols=['#ffcf6e','#ff7b7b','#7fe0ff','#b7ffb2','#d28bff','#ffd1f7'];
+      const a=Math.random()*Math.PI*2;
+      return{x:Math.random()*this.w,y:-10-Math.random()*200,vx:Math.cos(a)*(1+Math.random()*2),vy:2+Math.random()*4,size:6+Math.random()*12,rot:Math.random()*360,vr:-4+Math.random()*8,color:cols[Math.floor(Math.random()*cols.length)],life:200+Math.random()*200};
+    }
+    _run(){this.running=true;const step=()=>{this._draw();if(this.p.length>0)requestAnimationFrame(step);else this.running=false;};requestAnimationFrame(step);}
+    _draw(){
+      const ctx=this.ctx; ctx.clearRect(0,0,this.w,this.h);
+      for(let i=this.p.length-1;i>=0;i--){
+        const o=this.p[i]; o.x+=o.vx; o.y+=o.vy; o.vy+=0.08; o.rot+=o.vr; o.life-=1;
+        ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot*Math.PI/180);
+        ctx.fillStyle=o.color; ctx.fillRect(-o.size/2,-o.size/2,o.size,o.size*0.6); ctx.restore();
+        if(o.y>this.h+50||o.life<=0) this.p.splice(i,1);
+      }
+    }
+  }
+
+  function resizeCanvas(){
+    const rect=machine.getBoundingClientRect();
+    confettiCanvas.width=rect.width; confettiCanvas.height=rect.height;
+    confettiCanvas.style.width=rect.width+'px'; confettiCanvas.style.height=rect.height+'px';
+    confettiCanvas.getContext('2d').clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    if(confetti){confetti.w=confettiCanvas.width;confetti.h=confettiCanvas.height;}
+  }
+
+  async function spinAll(){
+    if(spinning) return;
+    const bet=BETS[betIdx];
+    if(balance<bet){
+      resultDisplay.textContent='Insufficient funds!';
+      resultDisplay.style.color='#e74c3c';
+      return;
+    }
+    balance-=bet; updUI();
+    spinning=true; spinBtn.disabled=true;
+    resultDisplay.textContent='Spinning...'; resultDisplay.style.color='#f0c040';
+    pullLeverAnim(); resizeCanvas(); startSweep();
+    confetti&&confetti.launch(6);
+
+    const promises=[];
+    for(let i=0;i<REELS;i++){await sleep(100);promises.push(spinReel(i));}
+    const results=await Promise.all(promises);
+    results.sort((a,b)=>a.reel-b.reel);
+    const stopped=results.map(r=>r.symbol);
+    const res=evaluate(stopped);
+
+    // Payout
+    const win=bet*res.mult; balance+=win; updUI();
+    const net=win-bet;
+    if(res.type==='JACKPOT'){
+      resultDisplay.textContent=`+$${win.toFixed(2)} JACKPOT!`;
+      resultDisplay.style.color='#f0c040';
+      showResultPopup(res.text,'jack');
+      confetti&&confetti.launch(140); doScreenFlash();
+    } else if(res.type==='WIN'){
+      resultDisplay.textContent=`+$${net.toFixed(2)} Win`;
+      resultDisplay.style.color='#2ecc71';
+      showResultPopup(res.text,'win');
+      confetti&&confetti.launch(40);
+    } else {
+      resultDisplay.textContent=`-$${bet.toFixed(2)}`;
+      resultDisplay.style.color='#e74c3c';
+      showResultPopup(res.text,'lose');
+    }
+
+    setTimeout(()=>{spinning=false;spinBtn.disabled=false;},600);
+  }
+
+  let confetti=new Confetti(ctx,confettiCanvas.width,confettiCanvas.height);
+  spinBtn.addEventListener('click',spinAll);
+  document.getElementById('leverBase').addEventListener('click',spinAll);
+  window.addEventListener('resize',resizeCanvas);
+  resizeCanvas();
+  window.addEventListener('keydown',(e)=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();spinAll();}});
+  updUI();
+})();
+</script>
+</body>
+</html>

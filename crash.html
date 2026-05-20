@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crash - Casino</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark:    #0f1724;
+            --bg-card:    #212731;
+            --bg-input:   #0f1724;
+            --accent-green: #00e701;
+            --accent-red:   #ff1f44;
+            --accent-blue:  #1a8cff;
+            --accent-gold:  #f5a623;
+            --text-main:  #ffffff;
+            --text-dim:   #b1bad3;
+            --border:     #2f3641;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body, html {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            height: 100%; width: 100%;
+            overflow: hidden;
+        }
+
+        .game-wrapper {
+            display: flex;
+            width: 100vw; height: 100vh;
+            flex-direction: row;
+        }
+
+        /* ── History panel ── */
+        .history-panel {
+            width: 148px; min-width: 148px;
+            background: var(--bg-card);
+            border-right: 2px solid var(--bg-dark);
+            display: flex; flex-direction: column;
+            padding: 16px 10px; gap: 10px;
+            overflow: hidden;
+        }
+        .history-title {
+            font-size: 11px; font-weight: 700;
+            color: var(--text-dim); letter-spacing: 0.08em;
+            text-transform: uppercase; text-align: center; flex-shrink: 0;
+        }
+        .history-list {
+            display: flex; flex-direction: column; gap: 5px;
+            overflow-y: auto; flex: 1;
+        }
+        .history-list::-webkit-scrollbar { width: 3px; }
+        .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 7px 9px; border-radius: 5px;
+            background: var(--bg-input); border-left: 3px solid transparent;
+            animation: slideIn 0.18s ease;
+        }
+        @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .history-multi { font-size: 13px; font-weight: 800; }
+        .history-payout { font-size: 10px; color: var(--text-dim); }
+
+        /* ── Center board ── */
+        .board-container {
+            flex: 1; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+            background: #161e2b;
+        }
+
+        /* Recent crash results bar */
+        .crash-bar {
+            height: 38px; background: var(--bg-card);
+            border-bottom: 2px solid var(--bg-dark);
+            display: flex; align-items: center;
+            padding: 0 14px; gap: 8px; overflow: hidden;
+        }
+        .crash-bar-label {
+            font-size: 10px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 0.08em; white-space: nowrap; margin-right: 4px;
+        }
+        .crash-pill {
+            padding: 3px 9px; border-radius: 20px;
+            font-size: 12px; font-weight: 800;
+            animation: pillIn 0.22s ease; flex-shrink: 0;
+        }
+        @keyframes pillIn { from { opacity:0; transform:scale(0.7); } to { opacity:1; transform:scale(1); } }
+
+        /* Menu button */
+        .menu-btn {
+            position: absolute; top: 48px; left: 14px;
+            padding: 8px 16px; border-radius: 30px;
+            background: linear-gradient(135deg, gold, orange);
+            color: black; font-weight: bold; text-decoration: none;
+            font-size: 13px; z-index: 5;
+            box-shadow: 0 0 12px rgba(255,200,0,0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .menu-btn:hover { transform: scale(1.08); box-shadow: 0 0 24px rgba(255,200,0,0.9); }
+
+        /* Canvas */
+        #crash-canvas { width: 100%; height: 100%; display: block; }
+
+        /* Multiplier overlay */
+        #multiplier-overlay {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -55%);
+            text-align: center; pointer-events: none; z-index: 4;
+        }
+        #mult-label {
+            font-size: clamp(48px,8vw,96px); font-weight: 800;
+            letter-spacing: -0.02em; line-height: 1;
+            text-shadow: 0 0 40px currentColor;
+            transition: color 0.1s;
+        }
+        #mult-sub {
+            font-size: 16px; color: var(--text-dim); margin-top: 6px;
+            font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+        }
+
+        /* Rocket */
+        #rocket {
+            position: absolute; font-size: 32px;
+            pointer-events: none; z-index: 5;
+            filter: drop-shadow(0 0 10px rgba(255,165,0,0.8));
+            transition: transform 0.05s linear;
+        }
+
+        /* Streak badge */
+        #streak-badge {
+            position: absolute; top: 48px; right: 14px;
+            background: linear-gradient(135deg,#b8860b,#ffd700);
+            color: #000; font-size: 12px; font-weight: 800;
+            padding: 6px 14px; border-radius: 20px;
+            box-shadow: 0 0 16px rgba(255,215,0,0.5);
+            display: none; z-index: 5;
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.07); } }
+
+        /* Crash flash overlay */
+        #crash-flash {
+            position: absolute; inset: 0;
+            background: rgba(255, 31, 68, 0.18);
+            pointer-events: none; opacity: 0; z-index: 6;
+            transition: opacity 0.12s;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 330px; background: var(--bg-card);
+            padding: 22px; display: flex; flex-direction: column;
+            gap: 18px; border-left: 2px solid var(--bg-dark);
+            overflow-y: auto;
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+        .balance-display {
+            background: var(--bg-input); border: 2px solid var(--border);
+            border-radius: 6px; padding: 12px 14px;
+        }
+        .balance-label {
+            font-size: 11px; font-weight: 700; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+        }
+        .balance-value {
+            font-size: 24px; font-weight: 800; color: var(--accent-green);
+            transition: color 0.3s;
+        }
+
+        .tabs {
+            display: flex; background: var(--bg-input);
+            padding: 4px; border-radius: 30px;
+        }
+        .tab-btn {
+            flex: 1; border: none; background: transparent;
+            color: var(--text-dim); padding: 10px; border-radius: 30px;
+            cursor: pointer; font-weight: 700; font-size: 14px;
+        }
+        .tab-btn.active { background: var(--border); color: white; }
+
+        .input-group { display: flex; flex-direction: column; gap: 7px; }
+        label { color: var(--text-dim); font-size: 13px; font-weight: 600; }
+
+        .bet-input-wrap {
+            display: flex; background: var(--bg-input);
+            border: 2px solid var(--border); border-radius: 4px;
+            padding: 5px; align-items: center; gap: 4px;
+        }
+        .bet-input-wrap input {
+            background: transparent; border: none; color: white;
+            padding: 7px; width: 100%; outline: none;
+            font-weight: 700; font-size: 15px;
+        }
+        .bet-input-wrap input:disabled { opacity: 0.5; }
+        .quick-btn {
+            background: var(--border); border: none; color: var(--text-dim);
+            padding: 6px 9px; border-radius: 3px; cursor: pointer;
+            font-size: 11px; font-weight: 700; white-space: nowrap;
+        }
+        .quick-btn:hover { background: #3d4652; color: white; }
+
+        #cashout-at-wrap {
+            display: flex; background: var(--bg-input);
+            border: 2px solid var(--border); border-radius: 4px;
+            padding: 5px; align-items: center;
+        }
+        #cashout-at-wrap input {
+            background: transparent; border: none; color: white;
+            padding: 7px; flex: 1; outline: none;
+            font-weight: 700; font-size: 15px;
+        }
+
+        /* Bet / Cashout button */
+        #action-btn {
+            border: none; padding: 17px; font-weight: 800;
+            border-radius: 4px; cursor: pointer; font-size: 16px;
+            text-transform: uppercase; transition: background 0.2s, filter 0.15s;
+            position: relative; overflow: hidden;
+        }
+        #action-btn:hover { filter: brightness(1.12); }
+        #action-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+        .btn-green  { background: var(--accent-green); color: #000; }
+        .btn-red    { background: var(--accent-red);   color: #fff; }
+        .btn-gold   { background: var(--accent-gold);  color: #000; }
+        .btn-gray   { background: var(--border);        color: #fff; }
+
+        /* Potential win display */
+        #potential-win-row {
+            display: flex; justify-content: space-between;
+            align-items: center; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: 4px;
+            padding: 10px 14px;
+        }
+        .pot-label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; }
+        #potential-win-val { font-size: 15px; font-weight: 800; color: var(--accent-green); }
+
+        /* Auto settings */
+        #auto-settings { display: none; flex-direction: column; gap: 14px; }
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .toggle-label { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+        .toggle {
+            width: 40px; height: 22px; border-radius: 11px;
+            background: var(--border); position: relative; cursor: pointer;
+            transition: background 0.2s; border: none;
+        }
+        .toggle.on { background: var(--accent-green); }
+        .toggle::after {
+            content: ''; position: absolute; width: 16px; height: 16px;
+            background: white; border-radius: 50%;
+            top: 3px; left: 3px; transition: left 0.2s;
+        }
+        .toggle.on::after { left: 21px; }
+
+        /* Stats */
+        .stats-section {
+            background: var(--bg-input); border-radius: 8px;
+            padding: 14px; border: 1px solid var(--border);
+        }
+        .stats-section-title {
+            font-size: 12px; font-weight: 700; color: var(--text-dim);
+            letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;
+        }
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;
+        }
+        .stat-item { border-left: 3px solid var(--border); padding-left: 12px; }
+        .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+        .stat-val { font-size: 17px; font-weight: 700; margin-top: 3px; }
+        .graph-wrap {
+            background: #0f1724; border-radius: 8px; padding: 8px;
+            cursor: zoom-in; position: relative;
+        }
+        .graph-wrap:hover::after {
+            content: '⛶  expand'; position: absolute; top: 8px; right: 10px;
+            font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4);
+            pointer-events: none; letter-spacing: 0.05em;
+        }
+        #profit-chart { width: 100%; height: 120px; display: block; }
+
+        /* Hot number badge */
+        .hot-badge {
+            display: inline-block; background: linear-gradient(135deg,#ff6b35,#ff1f44);
+            color: white; font-size: 9px; font-weight: 800; padding: 2px 7px;
+            border-radius: 10px; margin-left: 6px; vertical-align: middle;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        /* Game-over overlay */
+        #game-over-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.84); z-index: 2000;
+            justify-content: center; align-items: center;
+        }
+        #game-over-overlay.visible { display: flex; }
+        .game-over-box {
+            background: var(--bg-card); border: 2px solid var(--border);
+            border-radius: 18px; padding: 52px 64px; text-align: center;
+            display: flex; flex-direction: column; gap: 22px; align-items: center;
+        }
+        .game-over-title { font-size: 52px; font-weight: 800; color: var(--accent-red); }
+        .game-over-sub   { font-size: 16px; color: var(--text-dim); }
+        .game-over-stats { font-size: 17px; font-weight: 700; }
+        .game-over-buttons { display: flex; gap: 16px; margin-top: 6px; }
+        .go-btn {
+            padding: 14px 32px; border-radius: 6px; border: none;
+            font-size: 15px; font-weight: 800; cursor: pointer;
+            text-transform: uppercase; transition: filter 0.15s;
+        }
+        .go-btn:hover { filter: brightness(1.12); }
+        .go-btn-menu  { background: var(--border); color: white; }
+        .go-btn-retry { background: var(--accent-green); color: #000; }
+
+        /* Chart overlay */
+        #chart-overlay {
+            display: none; position: fixed; inset: 0; z-index: 3000;
+            justify-content: center; align-items: center;
+        }
+        #chart-overlay.visible { display: flex; }
+        #chart-overlay-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.72); backdrop-filter: blur(6px);
+        }
+        #chart-overlay-box {
+            position: relative; z-index: 1;
+            background: var(--bg-card); border: 2px solid var(--border);
+            border-radius: 16px; padding: 28px 32px 24px;
+            width: 90vw; max-width: 1100px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        #chart-overlay-header { display: flex; justify-content: space-between; align-items: center; }
+        #chart-overlay-title { font-size: 14px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+        #chart-overlay-close {
+            background: var(--border); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 50%; font-size: 18px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        #chart-overlay-close:hover { background: #555; }
+        #chart-overlay-tooltip { height: 22px; font-size: 13px; font-weight: 700; color: var(--text-dim); text-align: center; transition: color 0.1s; }
+        #expanded-chart { width: 100%; height: 55vh; display: block; border-radius: 8px; cursor: crosshair; }
+
+        /* Win notification */
+        #win-toast {
+            position: absolute; bottom: 32px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, #1a3a1a, #0d2b0d);
+            border: 2px solid var(--accent-green);
+            border-radius: 12px; padding: 14px 28px;
+            text-align: center; z-index: 10;
+            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none; box-shadow: 0 0 30px rgba(0,231,1,0.3);
+        }
+        #win-toast.show { transform: translateX(-50%) translateY(0); }
+        #win-toast-mult { font-size: 28px; font-weight: 800; color: var(--accent-green); }
+        #win-toast-amount { font-size: 14px; color: var(--text-dim); margin-top: 2px; }
+
+        /* Confetti canvas */
+        #confetti-canvas {
+            position: absolute; inset: 0; pointer-events: none; z-index: 9;
+        }
+
+        /* Blurred game wrapper */
+        .game-wrapper.blurred { filter: blur(5px); pointer-events: none; transition: filter 0.2s; }
+    </style>
+</head>
+<body>
+
+<!-- Chart Overlay -->
+<div id="chart-overlay">
+    <div id="chart-overlay-backdrop" onclick="closeChartOverlay()"></div>
+    <div id="chart-overlay-box">
+        <div id="chart-overlay-header">
+            <div id="chart-overlay-title">Profit History</div>
+            <button id="chart-overlay-close" onclick="closeChartOverlay()">✕</button>
+        </div>
+        <div id="chart-overlay-tooltip">Hover over the chart to inspect values</div>
+        <canvas id="expanded-chart"></canvas>
+    </div>
+</div>
+
+<!-- Game Over -->
+<div id="game-over-overlay">
+    <div class="game-over-box">
+        <div class="game-over-title">GAME OVER</div>
+        <div class="game-over-sub">You've run out of funds!</div>
+        <div class="game-over-stats" id="go-stats"></div>
+        <div class="game-over-buttons">
+            <button class="go-btn go-btn-menu" onclick="window.location.href='menu.html'">Back to Menu</button>
+            <button class="go-btn go-btn-retry" onclick="retryGame()">Try Again</button>
+        </div>
+    </div>
+</div>
+
+<div class="game-wrapper" id="game-wrapper">
+
+    <!-- History panel -->
+    <div class="history-panel">
+        <div class="history-title">History</div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container" id="board-container">
+        <div class="crash-bar" id="crash-bar">
+            <span class="crash-bar-label">Recent</span>
+        </div>
+        <a class="menu-btn" href="menu.html">menu</a>
+        <div id="streak-badge"></div>
+        <canvas id="crash-canvas"></canvas>
+        <div id="multiplier-overlay">
+            <div id="mult-label" style="color:#00e701">1.00×</div>
+            <div id="mult-sub">Waiting…</div>
+        </div>
+        <div id="rocket">🚀</div>
+        <div id="crash-flash"></div>
+        <canvas id="confetti-canvas"></canvas>
+        <div id="win-toast">
+            <div id="win-toast-mult"></div>
+            <div id="win-toast-amount"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <div class="balance-display">
+            <div class="balance-label">Balance</div>
+            <div class="balance-value" id="balance-display">$1000.00</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-manual" onclick="setMode('manual')">Manual</button>
+            <button class="tab-btn" id="tab-auto" onclick="setMode('auto')">Auto</button>
+        </div>
+
+        <!-- Bet amount -->
+        <div class="input-group">
+            <label>Bet Amount</label>
+            <div class="bet-input-wrap">
+                <input type="number" id="bet-amount" value="10.00" min="0.01" step="0.01">
+                <button class="quick-btn" onclick="multBet(0.5)">½</button>
+                <button class="quick-btn" onclick="multBet(2)">2×</button>
+                <button class="quick-btn" onclick="maxBet()">Max</button>
+            </div>
+        </div>
+
+        <!-- Cashout at -->
+        <div class="input-group">
+            <label>Auto Cashout At</label>
+            <div id="cashout-at-wrap">
+                <input type="number" id="cashout-at" value="2.00" min="1.01" step="0.01" placeholder="e.g. 2.00">
+            </div>
+        </div>
+
+        <!-- Potential win -->
+        <div id="potential-win-row">
+            <span class="pot-label">Profit on Win</span>
+            <span id="potential-win-val">$10.00</span>
+        </div>
+
+        <!-- Auto settings -->
+        <div id="auto-settings">
+            <div class="input-group">
+                <label>Number of Rounds (0 = ∞)</label>
+                <div class="bet-input-wrap">
+                    <input type="number" id="auto-count" value="0" min="0">
+                </div>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-label">Stop on Profit</span>
+                <button class="toggle" id="toggle-stop-profit" onclick="toggleBtn(this)"></button>
+            </div>
+            <div class="input-group" id="stop-profit-wrap" style="display:none">
+                <label>Stop if Profit ≥</label>
+                <div class="bet-input-wrap">
+                    <input type="number" id="stop-profit-val" value="100" min="1">
+                </div>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-label">Stop on Loss</span>
+                <button class="toggle" id="toggle-stop-loss" onclick="toggleBtn(this)"></button>
+            </div>
+            <div class="input-group" id="stop-loss-wrap" style="display:none">
+                <label>Stop if Loss ≥</label>
+                <div class="bet-input-wrap">
+                    <input type="number" id="stop-loss-val" value="100" min="1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action button -->
+        <button id="action-btn" class="btn-green" onclick="handleAction()">Bet</button>
+
+        <!-- Stats -->
+        <div class="stats-section">
+            <div class="stats-section-title">Live Stats</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Profit</div>
+                    <div class="stat-val" id="stat-profit" style="color:var(--accent-green)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">W / L</div>
+                    <div class="stat-val">
+                        <span id="stat-wins" style="color:var(--accent-green)">0</span> /
+                        <span id="stat-losses" style="color:var(--accent-red)">0</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Best Mult</div>
+                    <div class="stat-val" id="stat-best" style="color:var(--accent-gold)">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Rounds</div>
+                    <div class="stat-val" id="stat-rounds">0</div>
+                </div>
+            </div>
+            <div class="graph-wrap" onclick="openChartOverlay()">
+                <canvas id="profit-chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* ─── Constants ─── */
+const STARTING_BALANCE = 1000;
+const TICK_INTERVAL    = 50;   // ms between multiplier ticks
+const WAITING_MS       = 4000; // time between rounds
+
+/* ─── State ─── */
+let balance       = STARTING_BALANCE;
+let profit        = 0;
+let wins          = 0;
+let losses        = 0;
+let rounds        = 0;
+let profitHistory = [0];
+let recentCrashes = [];
+let bestMult      = null;
+let streak        = 0; // positive = win streak, negative = loss streak
+let gameOver      = false;
+
+// Round state
+// phase: 'waiting' | 'running' | 'crashed'
+let phase       = 'waiting';
+let multiplier  = 1.00;
+let crashAt     = 1.00;
+let betActive   = false;   // player has bet this round
+let cashedOut   = false;
+let betAmount   = 0;
+let tickTimer   = null;
+let waitTimer   = null;
+let countdown   = 0;
+let autoRoundsLeft = 0;
+
+// Auto mode
+let isAuto         = false;
+let autoRunning    = false;
+let autoStopProfit = false;
+let autoStopLoss   = false;
+
+/* ─── Canvas refs ─── */
+const canvas       = document.getElementById('crash-canvas');
+const ctx          = canvas.getContext('2d');
+const confCanvas   = document.getElementById('confetti-canvas');
+const confCtx      = confCanvas.getContext('2d');
+const chartCanvas  = document.getElementById('profit-chart');
+const chartCtx     = chartCanvas.getContext('2d');
+const expandedCanvas = document.getElementById('expanded-chart');
+const expandedCtx    = expandedCanvas.getContext('2d');
+
+/* ─── Crash curve data ─── */
+let curvePoints = []; // {t, m} pairs
+let gameElapsed = 0;  // seconds since round start
+
+/* ─── Resize ─── */
+function resizeCanvas() {
+    const bc = document.getElementById('board-container');
+    const cbar = document.querySelector('.crash-bar');
+    const W = bc.clientWidth;
+    const H = bc.clientHeight - cbar.clientHeight;
+    canvas.width = W; canvas.height = H;
+    confCanvas.width = W; confCanvas.height = H;
+    canvas.style.top  = cbar.clientHeight + 'px';
+    confCanvas.style.position = 'absolute';
+    confCanvas.style.top = cbar.clientHeight + 'px';
+    confCanvas.style.left = '0';
+}
+window.addEventListener('resize', () => { resizeCanvas(); drawCurve(); });
+resizeCanvas();
+
+/* ─── RNG: provably-fair-style crash point ─── */
+function generateCrashPoint() {
+    // House edge ~3%. Multiplier follows 1/(1-r) distribution.
+    const e = 0.03;
+    const r = Math.random();
+    if (r < e) return 1.00; // instant crash
+    const raw = (1 / (1 - r)) * (1 - e);
+    return Math.max(1.00, Math.floor(raw * 100) / 100);
+}
+
+/* ─── Multiplier → colour ─── */
+function multColor(m) {
+    if (m < 1.5)  return '#00e701';
+    if (m < 3)    return '#4fc3f7';
+    if (m < 6)    return '#f5a623';
+    if (m < 10)   return '#ff9800';
+    return '#ff1f44';
+}
+
+/* ─── Crash pill colour ─── */
+function pillStyle(m) {
+    if (m < 2)   return 'background:#1a3a1a;color:#00e701;border:1px solid #00e701';
+    if (m < 5)   return 'background:#1a2a3a;color:#4fc3f7;border:1px solid #4fc3f7';
+    if (m < 10)  return 'background:#3a2a0a;color:#f5a623;border:1px solid #f5a623';
+    return 'background:#3a0a0a;color:#ff1f44;border:1px solid #ff1f44';
+}
+
+/* ─── Round lifecycle ─── */
+function startWaiting() {
+    phase = 'waiting';
+    multiplier = 1.00;
+    curvePoints = [];
+    gameElapsed = 0;
+    betActive = false;
+    cashedOut = false;
+
+    const mult = document.getElementById('mult-label');
+    mult.textContent = '1.00×';
+    mult.style.color = '#00e701';
+    document.getElementById('mult-sub').textContent = 'Place your bet!';
+    document.getElementById('rocket').style.display = 'none';
+    drawCurve();
+    updateActionBtn();
+
+    countdown = WAITING_MS;
+    const step = 100;
+    function tick() {
+        countdown -= step;
+        if (phase !== 'waiting') return;
+        if (countdown <= 0) {
+            startRound();
+        } else {
+            document.getElementById('mult-sub').textContent = `Starting in ${(countdown/1000).toFixed(1)}s…`;
+            waitTimer = setTimeout(tick, step);
+        }
+    }
+    waitTimer = setTimeout(tick, step);
+
+    // Auto-bet
+    if (isAuto && autoRunning) {
+        scheduleAutoBet();
+    }
+}
+
+function scheduleAutoBet() {
+    // Auto place bet at start of waiting phase
+    setTimeout(() => {
+        if (phase === 'waiting' && autoRunning) {
+            placeBet();
+        }
+    }, 50);
+}
+
+function startRound() {
+    if (phase !== 'waiting') return;
+    phase = 'running';
+    crashAt = generateCrashPoint();
+    gameElapsed = 0;
+    curvePoints = [];
+    rounds++;
+
+    document.getElementById('mult-sub').textContent = 'Running…';
+    document.getElementById('rocket').style.display = 'block';
+    updateActionBtn();
+
+    const interval = TICK_INTERVAL;
+    let lastTime = performance.now();
+
+    function tick() {
+        if (phase !== 'running') return;
+        const now = performance.now();
+        const dt  = (now - lastTime) / 1000;
+        lastTime  = now;
+        gameElapsed += dt;
+
+        // Multiplier grows: m = e^(k*t), tuned so it feels right
+        multiplier = Math.max(1.00, Math.exp(0.08 * gameElapsed));
+
+        // Auto cashout
+        const autoCashoutVal = parseFloat(document.getElementById('cashout-at').value) || 0;
+        if (betActive && !cashedOut && autoCashoutVal > 1.00 && multiplier >= autoCashoutVal) {
+            doCashout();
+        }
+
+        if (multiplier >= crashAt) {
+            multiplier = crashAt;
+            curvePoints.push({ t: gameElapsed, m: multiplier });
+            doCrash();
+            return;
+        }
+
+        curvePoints.push({ t: gameElapsed, m: multiplier });
+        updateMultiplierDisplay();
+        drawCurve();
+
+        tickTimer = requestAnimationFrame(tick);
+    }
+    tickTimer = requestAnimationFrame(tick);
+}
+
+function doCashout() {
+    if (!betActive || cashedOut) return;
+    cashedOut = true;
+    const winAmount = betAmount * multiplier;
+    const profit_delta = winAmount - betAmount;
+    balance += winAmount;
+    profit  += profit_delta;
+    wins++;
+    streak  = streak > 0 ? streak + 1 : 1;
+    if (!bestMult || multiplier > bestMult) bestMult = multiplier;
+    profitHistory.push(profit);
+
+    showWinToast(multiplier, winAmount);
+    if (multiplier >= 5) launchConfetti();
+    updateStats();
+    updateBalanceDisplay();
+    addHistoryItem(multiplier, winAmount, true);
+
+    // Check auto stop conditions
+    if (autoRunning) {
+        const sp = document.getElementById('stop-profit-val');
+        const sl = document.getElementById('stop-loss-val');
+        if (autoStopProfit && profit >= parseFloat(sp.value)) stopAuto();
+    }
+
+    updateActionBtn();
+}
+
+function doCrash() {
+    phase = 'crashed';
+    cancelAnimationFrame(tickTimer);
+    const crashMult = multiplier;
+
+    // Player lost their bet
+    if (betActive && !cashedOut) {
+        balance -= betAmount; // was already deducted at bet time, so no extra deduction
+        profit  -= betAmount;
+        losses++;
+        streak   = streak < 0 ? streak - 1 : -1;
+        profitHistory.push(profit);
+        updateStats();
+        updateBalanceDisplay();
+        addHistoryItem(crashMult, -betAmount, false);
+        // Auto stop loss
+        if (autoRunning) {
+            const sl = parseFloat(document.getElementById('stop-loss-val').value);
+            if (autoStopLoss && -profit >= sl) stopAuto();
+        }
+    } else {
+        addCrashPill(crashMult);
+    }
+
+    recentCrashes.unshift(crashMult);
+    if (recentCrashes.length > 14) recentCrashes.pop();
+    updateCrashBar();
+
+    updateMultiplierDisplay(true);
+    document.getElementById('mult-sub').textContent = '🚨 CRASHED!';
+    document.getElementById('rocket').style.display = 'none';
+    flashRed();
+    drawCurve(true);
+    updateActionBtn();
+    drawProfitChart();
+
+    // Streak badge
+    updateStreakBadge();
+
+    if (balance <= 0 && !betActive) { showGameOver(); return; }
+    if (balance <= 0 && betActive && !cashedOut) { showGameOver(); return; }
+
+    // Auto rounds
+    if (autoRunning) {
+        if (autoRoundsLeft > 0) {
+            autoRoundsLeft--;
+            if (autoRoundsLeft === 0) { stopAuto(); }
+        }
+        if (autoRunning) {
+            waitTimer = setTimeout(startWaiting, WAITING_MS);
+            return;
+        }
+    }
+
+    waitTimer = setTimeout(startWaiting, WAITING_MS);
+}
+
+function placeBet() {
+    if (phase !== 'waiting') return;
+    if (betActive) return;
+    const amt = parseFloat(document.getElementById('bet-amount').value);
+    if (isNaN(amt) || amt <= 0) return;
+    if (amt > balance) { alert('Insufficient balance!'); return; }
+    betAmount = amt;
+    balance  -= amt; // hold the bet
+    betActive = true;
+    cashedOut = false;
+    updateBalanceDisplay();
+    updateActionBtn();
+    updatePotentialWin();
+}
+
+/* ─── Action button handler ─── */
+function handleAction() {
+    if (gameOver) return;
+    if (phase === 'waiting' && !betActive) {
+        if (isAuto) {
+            if (autoRunning) stopAuto();
+            else startAuto();
+        } else {
+            placeBet();
+        }
+    } else if (phase === 'running' && betActive && !cashedOut) {
+        doCashout();
+    } else if (phase === 'crashed') {
+        // waiting for next round; nothing to do
+    }
+}
+
+function updateActionBtn() {
+    const btn = document.getElementById('action-btn');
+    btn.disabled = false;
+    btn.className = 'btn-green';
+
+    if (phase === 'waiting' && !betActive) {
+        if (isAuto) {
+            if (autoRunning) {
+                btn.textContent = 'Stop Auto';
+                btn.className = 'btn-red';
+            } else {
+                btn.textContent = 'Start Auto';
+                btn.className = 'btn-green';
+            }
+        } else {
+            btn.textContent = 'Bet';
+            btn.className = 'btn-green';
+        }
+    } else if (phase === 'waiting' && betActive) {
+        btn.textContent = `Bet Placed — $${betAmount.toFixed(2)}`;
+        btn.className = 'btn-gray';
+        btn.disabled = true;
+    } else if (phase === 'running' && betActive && !cashedOut) {
+        const pot = (betAmount * multiplier).toFixed(2);
+        btn.textContent = `Cashout $${pot}`;
+        btn.className = 'btn-gold';
+    } else if (phase === 'running' && (!betActive || cashedOut)) {
+        btn.textContent = cashedOut ? `Cashed Out ✓` : 'In Progress…';
+        btn.className = cashedOut ? 'btn-green' : 'btn-gray';
+        btn.disabled = true;
+    } else if (phase === 'crashed') {
+        btn.textContent = 'Waiting for next round…';
+        btn.className = 'btn-gray';
+        btn.disabled = true;
+    }
+
+    // Animate cashout button text while running
+    if (phase === 'running' && betActive && !cashedOut) {
+        const pot = (betAmount * multiplier).toFixed(2);
+        btn.textContent = `Cashout $${pot}`;
+    }
+}
+
+/* ─── Draw curve ─── */
+function drawCurve(crashed = false) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 6; i++) {
+        const y = H * i / 6;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    for (let i = 1; i < 10; i++) {
+        const x = W * i / 10;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+
+    if (curvePoints.length < 2) {
+        // Axes labels when idle
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.font = '13px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Place your bet before the round starts!', W/2, H/2 + 50);
+        return;
+    }
+
+    const PAD_L = 52, PAD_B = 38, PAD_T = 24, PAD_R = 20;
+    const cw = W - PAD_L - PAD_R;
+    const ch = H - PAD_T - PAD_B;
+
+    const maxT = Math.max(...curvePoints.map(p => p.t), 5);
+    const maxM = Math.max(...curvePoints.map(p => p.m), 2);
+
+    function px(t) { return PAD_L + (t / maxT) * cw; }
+    function py(m) { return H - PAD_B - ((m - 1) / (maxM - 1 || 1)) * ch; }
+
+    // Y-axis labels
+    ctx.fillStyle = 'rgba(177,186,211,0.55)';
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'right';
+    const steps = 5;
+    for (let i = 0; i <= steps; i++) {
+        const m = 1 + ((maxM - 1) * (steps - i) / steps);
+        const y = py(m);
+        ctx.fillText(m.toFixed(1) + '×', PAD_L - 6, y + 4);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    }
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 5; i++) {
+        const t = (maxT * i / 5);
+        const x = px(t);
+        ctx.fillStyle = 'rgba(177,186,211,0.45)';
+        ctx.fillText(t.toFixed(0) + 's', x, H - PAD_B + 18);
+    }
+
+    // Filled area under curve
+    const col = crashed ? '#ff1f44' : multColor(multiplier);
+    const gradient = ctx.createLinearGradient(0, PAD_T, 0, H - PAD_B);
+    gradient.addColorStop(0, crashed ? 'rgba(255,31,68,0.35)' : 'rgba(0,231,1,0.35)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.beginPath();
+    ctx.moveTo(px(curvePoints[0].t), H - PAD_B);
+    curvePoints.forEach(p => ctx.lineTo(px(p.t), py(p.m)));
+    ctx.lineTo(px(curvePoints[curvePoints.length - 1].t), H - PAD_B);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Curve line
+    ctx.beginPath();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap  = 'round';
+    curvePoints.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(px(p.t), py(p.m));
+        else ctx.lineTo(px(p.t), py(p.m));
+    });
+    ctx.shadowBlur = crashed ? 0 : 12;
+    ctx.shadowColor = col;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Tip dot
+    const last = curvePoints[curvePoints.length - 1];
+    ctx.beginPath();
+    ctx.arc(px(last.t), py(last.m), 6, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.shadowBlur = 16; ctx.shadowColor = col;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Move rocket
+    positionRocket(px(last.t), py(last.m));
+}
+
+function positionRocket(x, y) {
+    const rkt = document.getElementById('rocket');
+    if (phase !== 'running') { rkt.style.display = 'none'; return; }
+    rkt.style.display = 'block';
+    const bc = document.getElementById('board-container');
+    const cbar = document.querySelector('.crash-bar');
+    const offsetY = cbar.clientHeight;
+    rkt.style.left  = (x - 16) + 'px';
+    rkt.style.top   = (y + offsetY - 20) + 'px';
+    // Tilt based on curve direction
+    const prev = curvePoints.length > 1 ? curvePoints[curvePoints.length - 2] : null;
+    if (prev) {
+        const dx = x - (document.getElementById('board-container').clientWidth * prev.t / Math.max(...curvePoints.map(p=>p.t),5) + 52);
+        const angle = Math.min(70, Math.max(-20, -Math.atan2(10, dx) * 40));
+        rkt.style.transform = `rotate(${angle}deg)`;
+    }
+}
+
+/* ─── Multiplier display ─── */
+function updateMultiplierDisplay(crashed = false) {
+    const el = document.getElementById('mult-label');
+    el.textContent = multiplier.toFixed(2) + '×';
+    el.style.color = crashed ? '#ff1f44' : multColor(multiplier);
+    updateActionBtn();
+}
+
+/* ─── Flash red on crash ─── */
+function flashRed() {
+    const fl = document.getElementById('crash-flash');
+    fl.style.opacity = '1';
+    setTimeout(() => fl.style.opacity = '0', 600);
+}
+
+/* ─── Crash pills bar ─── */
+function updateCrashBar() {
+    const bar = document.getElementById('crash-bar');
+    // Keep label
+    const label = bar.querySelector('.crash-bar-label');
+    bar.innerHTML = '';
+    bar.appendChild(label);
+    recentCrashes.slice(0,12).forEach(m => {
+        const pill = document.createElement('div');
+        pill.className = 'crash-pill';
+        pill.style.cssText = pillStyle(m);
+        pill.textContent = m.toFixed(2) + '×';
+        bar.appendChild(pill);
+    });
+}
+
+function addCrashPill(m) {
+    // handled in doCrash via updateCrashBar
+}
+
+/* ─── History panel ─── */
+function addHistoryItem(mult, amount, won) {
+    const list = document.getElementById('history-list');
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const col = won ? 'var(--accent-green)' : 'var(--accent-red)';
+    item.style.borderLeftColor = col;
+    item.innerHTML = `
+        <span class="history-multi" style="color:${col}">${mult.toFixed(2)}×</span>
+        <span class="history-payout" style="color:${won ? 'var(--accent-green)' : 'var(--accent-red)'}">${won ? '+' : '-'}$${Math.abs(amount).toFixed(2)}</span>
+    `;
+    list.insertBefore(item, list.firstChild);
+    while (list.children.length > 30) list.removeChild(list.lastChild);
+}
+
+/* ─── Balance display ─── */
+function updateBalanceDisplay() {
+    const el = document.getElementById('balance-display');
+    el.textContent = '$' + balance.toFixed(2);
+    el.style.color = balance >= 200 ? 'var(--accent-green)'
+                   : balance > 0    ? 'var(--accent-gold)'
+                   :                  'var(--accent-red)';
+}
+
+/* ─── Stats ─── */
+function updateStats() {
+    const el = document.getElementById('stat-profit');
+    el.textContent = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2);
+    el.style.color = profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    document.getElementById('stat-wins').textContent = wins;
+    document.getElementById('stat-losses').textContent = losses;
+    document.getElementById('stat-best').textContent = bestMult ? bestMult.toFixed(2) + '×' : '—';
+    document.getElementById('stat-rounds').textContent = rounds;
+    drawProfitChart();
+}
+
+/* ─── Streak badge ─── */
+function updateStreakBadge() {
+    const el = document.getElementById('streak-badge');
+    if (streak >= 3) {
+        el.style.display = 'block';
+        el.textContent = `🔥 ${streak} Win Streak!`;
+        el.style.background = 'linear-gradient(135deg,#b8860b,#ffd700)';
+    } else if (streak <= -3) {
+        el.style.display = 'block';
+        el.textContent = `❄️ ${Math.abs(streak)} Loss Streak`;
+        el.style.background = 'linear-gradient(135deg,#1a2a3a,#2d4a6a)';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+/* ─── Win toast ─── */
+function showWinToast(mult, amount) {
+    const toast = document.getElementById('win-toast');
+    document.getElementById('win-toast-mult').textContent = mult.toFixed(2) + '×';
+    document.getElementById('win-toast-amount').textContent = `+$${amount.toFixed(2)}`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+/* ─── Confetti ─── */
+let confettiParticles = [];
+function launchConfetti() {
+    const W = confCanvas.width, H = confCanvas.height;
+    const colors = ['#00e701','#ffd700','#ff6b35','#4fc3f7','#ce93d8','#ff1f44'];
+    for (let i = 0; i < 140; i++) {
+        confettiParticles.push({
+            x: W/2 + (Math.random()-0.5)*200,
+            y: H/2,
+            vx: (Math.random()-0.5)*8,
+            vy: Math.random()*-14 - 2,
+            color: colors[Math.floor(Math.random()*colors.length)],
+            w: Math.random()*8+4, h: Math.random()*4+3,
+            rot: Math.random()*360, rotV: (Math.random()-0.5)*10,
+            life: 1,
+        });
+    }
+    animateConfetti();
+}
+function animateConfetti() {
+    confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+    confettiParticles = confettiParticles.filter(p => p.life > 0);
+    confettiParticles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.4;
+        p.rot += p.rotV; p.life -= 0.012;
+        confCtx.save();
+        confCtx.globalAlpha = p.life;
+        confCtx.translate(p.x, p.y);
+        confCtx.rotate(p.rot * Math.PI/180);
+        confCtx.fillStyle = p.color;
+        confCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        confCtx.restore();
+    });
+    if (confettiParticles.length > 0) requestAnimationFrame(animateConfetti);
+    else confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+}
+
+/* ─── Profit chart ─── */
+function drawProfitChart() {
+    const W = chartCanvas.width  = chartCanvas.offsetWidth;
+    const H = chartCanvas.height = chartCanvas.offsetHeight;
+    chartCtx.clearRect(0, 0, W, H);
+    if (profitHistory.length < 2) return;
+    const maxAbs = Math.max(...profitHistory.map(v=>Math.abs(v)), 10);
+    const scale  = (H/2 - 6) / maxAbs;
+    const zeroY  = H/2;
+    chartCtx.strokeStyle = 'rgba(255,255,255,0.07)';
+    chartCtx.lineWidth = 1;
+    chartCtx.beginPath(); chartCtx.moveTo(0, zeroY); chartCtx.lineTo(W, zeroY); chartCtx.stroke();
+    chartCtx.lineWidth = 2;
+    chartCtx.lineCap = 'round'; chartCtx.lineJoin = 'round';
+    for (let i = 0; i < profitHistory.length - 1; i++) {
+        const v1 = profitHistory[i], v2 = profitHistory[i+1];
+        const x1 = (i/(profitHistory.length-1))*W, x2 = ((i+1)/(profitHistory.length-1))*W;
+        const y1 = zeroY - v1*scale, y2 = zeroY - v2*scale;
+        chartCtx.strokeStyle = v2 >= 0 ? '#00e701' : '#ff1f44';
+        chartCtx.beginPath(); chartCtx.moveTo(x1,y1); chartCtx.lineTo(x2,y2); chartCtx.stroke();
+    }
+}
+
+/* ─── Bet quick actions ─── */
+function multBet(factor) {
+    const inp = document.getElementById('bet-amount');
+    inp.value = (parseFloat(inp.value||0) * factor).toFixed(2);
+    updatePotentialWin();
+}
+function maxBet() {
+    document.getElementById('bet-amount').value = balance.toFixed(2);
+    updatePotentialWin();
+}
+function updatePotentialWin() {
+    const bet = parseFloat(document.getElementById('bet-amount').value) || 0;
+    const at  = parseFloat(document.getElementById('cashout-at').value) || 2;
+    const win = bet * at;
+    document.getElementById('potential-win-val').textContent = '$' + win.toFixed(2);
+}
+document.getElementById('bet-amount').addEventListener('input', updatePotentialWin);
+document.getElementById('cashout-at').addEventListener('input', updatePotentialWin);
+
+/* ─── Mode ─── */
+function setMode(m) {
+    isAuto = m === 'auto';
+    document.getElementById('tab-manual').classList.toggle('active', !isAuto);
+    document.getElementById('tab-auto').classList.toggle('active', isAuto);
+    document.getElementById('auto-settings').style.display = isAuto ? 'flex' : 'none';
+    if (!isAuto) stopAuto();
+    updateActionBtn();
+}
+
+/* ─── Auto ─── */
+function startAuto() {
+    autoRunning = true;
+    autoStopProfit = document.getElementById('toggle-stop-profit').classList.contains('on');
+    autoStopLoss   = document.getElementById('toggle-stop-loss').classList.contains('on');
+    const count = parseInt(document.getElementById('auto-count').value) || 0;
+    autoRoundsLeft = count; // 0 = infinite
+    if (phase === 'waiting') placeBet();
+    updateActionBtn();
+}
+function stopAuto() {
+    autoRunning = false;
+    updateActionBtn();
+}
+
+/* ─── Toggle buttons ─── */
+function toggleBtn(el) {
+    el.classList.toggle('on');
+    const isProfit = el.id === 'toggle-stop-profit';
+    document.getElementById(isProfit ? 'stop-profit-wrap' : 'stop-loss-wrap').style.display =
+        el.classList.contains('on') ? 'flex' : 'none';
+}
+
+/* ─── Game over ─── */
+function showGameOver() {
+    gameOver = true;
+    document.getElementById('go-stats').textContent =
+        `Rounds: ${rounds} · W/L: ${wins}/${losses} · Profit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`;
+    document.getElementById('game-over-overlay').classList.add('visible');
+}
+function retryGame() {
+    balance = STARTING_BALANCE; profit = 0; wins = 0; losses = 0;
+    rounds = 0; profitHistory = [0]; bestMult = null; streak = 0;
+    recentCrashes = []; gameOver = false;
+    document.getElementById('game-over-overlay').classList.remove('visible');
+    updateBalanceDisplay(); updateStats();
+    startWaiting();
+}
+
+/* ─── Expanded chart ─── */
+let chartOverlayOpen = false, expandedHoverX = null;
+function openChartOverlay() {
+    chartOverlayOpen = true;
+    document.getElementById('chart-overlay').classList.add('visible');
+    document.getElementById('game-wrapper').classList.add('blurred');
+    requestAnimationFrame(() => {
+        const rect = expandedCanvas.getBoundingClientRect();
+        expandedCanvas.width  = Math.round(rect.width)  || 900;
+        expandedCanvas.height = Math.round(rect.height) || 420;
+        drawExpandedChart(null);
+    });
+}
+function closeChartOverlay() {
+    chartOverlayOpen = false;
+    document.getElementById('chart-overlay').classList.remove('visible');
+    document.getElementById('game-wrapper').classList.remove('blurred');
+    expandedHoverX = null;
+    document.getElementById('chart-overlay-tooltip').textContent = 'Hover over the chart to inspect values';
+    document.getElementById('chart-overlay-tooltip').style.color = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChartOverlay(); });
+
+function drawExpandedChart(hoverX) {
+    const w = expandedCanvas.width, h = expandedCanvas.height;
+    expandedCtx.clearRect(0, 0, w, h);
+    expandedCtx.fillStyle = '#0b1120';
+    expandedCtx.fillRect(0, 0, w, h);
+    if (profitHistory.length < 2) {
+        expandedCtx.fillStyle = 'rgba(255,255,255,0.25)';
+        expandedCtx.font = 'bold 15px Inter';
+        expandedCtx.textAlign = 'center';
+        expandedCtx.fillText('No data yet — play some rounds!', w/2, h/2);
+        return;
+    }
+    const padL=68, padR=24, padT=24, padB=36;
+    const cw=w-padL-padR, ch=h-padT-padB;
+    const maxAbs = Math.max(...profitHistory.map(v=>Math.abs(v)), 20);
+    const scale  = (ch/2-10) / maxAbs;
+    const zeroY  = padT + ch/2;
+    const steps  = 6;
+    for (let i = 0; i <= steps; i++) {
+        const frac = i/steps, y = padT + frac*ch;
+        const val  = maxAbs - frac*2*maxAbs;
+        expandedCtx.strokeStyle = 'rgba(255,255,255,0.07)';
+        expandedCtx.lineWidth = 1;
+        expandedCtx.beginPath(); expandedCtx.moveTo(padL, y); expandedCtx.lineTo(w-padR, y); expandedCtx.stroke();
+        expandedCtx.fillStyle = 'rgba(177,186,211,0.55)';
+        expandedCtx.font = '11px Inter'; expandedCtx.textAlign = 'right';
+        expandedCtx.fillText((val>=0?'+':'')+'$'+Math.round(val), padL-8, y+4);
+    }
+    expandedCtx.strokeStyle = 'rgba(255,255,255,0.22)';
+    expandedCtx.lineWidth = 1.5;
+    expandedCtx.beginPath(); expandedCtx.moveTo(padL, zeroY); expandedCtx.lineTo(w-padR, zeroY); expandedCtx.stroke();
+    const tickCount = Math.min(10, profitHistory.length-1);
+    for (let t = 0; t <= tickCount; t++) {
+        const idx = Math.round((t/tickCount)*(profitHistory.length-1));
+        const x   = padL + (idx/(profitHistory.length-1))*cw;
+        expandedCtx.fillStyle = 'rgba(177,186,211,0.45)'; expandedCtx.font = '10px Inter'; expandedCtx.textAlign = 'center';
+        expandedCtx.fillText('#'+idx, x, h-padB+18);
+    }
+    function ptX(i) { return padL+(i/(profitHistory.length-1))*cw; }
+    function ptY(i) { return zeroY-profitHistory[i]*scale; }
+    expandedCtx.lineWidth = 2.5; expandedCtx.lineCap = 'round'; expandedCtx.lineJoin = 'round';
+    for (let i = 0; i < profitHistory.length-1; i++) {
+        const v1=profitHistory[i], v2=profitHistory[i+1];
+        const x1=ptX(i), y1=ptY(i), x2=ptX(i+1), y2=ptY(i+1);
+        if ((v1>=0)===(v2>=0)) {
+            expandedCtx.strokeStyle = v2>=0?'#00e701':'#ff1f44';
+            expandedCtx.beginPath(); expandedCtx.moveTo(x1,y1); expandedCtx.lineTo(x2,y2); expandedCtx.stroke();
+        } else {
+            const t = Math.abs(v1)/(Math.abs(v1)+Math.abs(v2));
+            const xm = x1+(x2-x1)*t;
+            expandedCtx.strokeStyle = v1>=0?'#00e701':'#ff1f44';
+            expandedCtx.beginPath(); expandedCtx.moveTo(x1,y1); expandedCtx.lineTo(xm,zeroY); expandedCtx.stroke();
+            expandedCtx.strokeStyle = v2>=0?'#00e701':'#ff1f44';
+            expandedCtx.beginPath(); expandedCtx.moveTo(xm,zeroY); expandedCtx.lineTo(x2,y2); expandedCtx.stroke();
+        }
+    }
+    if (hoverX != null && profitHistory.length >= 2) {
+        const cx = Math.max(padL, Math.min(w-padR, hoverX));
+        const ratio = (cx-padL)/cw;
+        const idx = Math.max(0, Math.min(profitHistory.length-1, Math.round(ratio*(profitHistory.length-1))));
+        const val = profitHistory[idx];
+        const dotY = zeroY-val*scale;
+        const col = val>=0?'#00e701':'#ff1f44';
+        expandedCtx.strokeStyle = 'rgba(255,255,255,0.35)'; expandedCtx.lineWidth = 1;
+        expandedCtx.setLineDash([5,5]);
+        expandedCtx.beginPath(); expandedCtx.moveTo(cx, padT); expandedCtx.lineTo(cx, h-padB); expandedCtx.stroke();
+        expandedCtx.strokeStyle = val>=0?'rgba(0,231,1,0.45)':'rgba(255,31,68,0.45)';
+        expandedCtx.beginPath(); expandedCtx.moveTo(padL, dotY); expandedCtx.lineTo(w-padR, dotY); expandedCtx.stroke();
+        expandedCtx.setLineDash([]);
+        expandedCtx.fillStyle = col; expandedCtx.font = 'bold 11px Inter'; expandedCtx.textAlign = 'right';
+        expandedCtx.fillText((val>=0?'+':'')+' $'+val.toFixed(2), padL-5, dotY+4);
+        expandedCtx.beginPath(); expandedCtx.arc(cx, dotY, 6, 0, Math.PI*2);
+        expandedCtx.fillStyle = col; expandedCtx.shadowBlur = 10; expandedCtx.shadowColor = col;
+        expandedCtx.fill(); expandedCtx.shadowBlur = 0;
+        const tooltip = document.getElementById('chart-overlay-tooltip');
+        tooltip.textContent = `Round #${idx}  ·  Profit: ${val>=0?'+':''}$${val.toFixed(2)}`;
+        tooltip.style.color = col;
+    }
+}
+expandedCanvas.addEventListener('mousemove', function(e) {
+    if (!chartOverlayOpen) return;
+    const rect = expandedCanvas.getBoundingClientRect();
+    expandedHoverX = (e.clientX-rect.left)*(expandedCanvas.width/rect.width);
+    drawExpandedChart(expandedHoverX);
+});
+expandedCanvas.addEventListener('mouseleave', function() {
+    expandedHoverX = null; drawExpandedChart(null);
+    document.getElementById('chart-overlay-tooltip').textContent = 'Hover over the chart to inspect values';
+    document.getElementById('chart-overlay-tooltip').style.color = '';
+});
+
+/* ─── Keyboard shortcut ─── */
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !e.repeat) { e.preventDefault(); handleAction(); }
+});
+
+/* ─── RAF loop for running state display ─── */
+function displayLoop() {
+    if (phase === 'running' && betActive && !cashedOut) {
+        const pot = (betAmount * multiplier).toFixed(2);
+        const btn = document.getElementById('action-btn');
+        btn.textContent = `Cashout $${pot}`;
+    }
+    requestAnimationFrame(displayLoop);
+}
+displayLoop();
+
+/* ─── Boot ─── */
+updateBalanceDisplay();
+updateStats();
+updatePotentialWin();
+startWaiting();
+</script>
+</body>
+</html>

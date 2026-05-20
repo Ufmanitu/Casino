@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heads-Up Poker</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lato:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+/*menu gomb*/
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 18px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, gold, orange);
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255, 200, 0, 0.7);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    z-index: 999;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 200, 0, 1);
+}
+/* ═══════════════════════════════════════════════
+   ROOT & RESET
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:          #07091a;
+  --felt:        #0c5233;
+  --felt-dark:   #082e1e;
+  --felt-edge:   #062619;
+  --gold:        #c9a93c;
+  --gold-light:  #e8cc70;
+  --gold-dim:    rgba(201,169,60,0.3);
+  --red:         #c0392b;
+  --cream:       #f8f4ea;
+  --text:        #ddd5b8;
+  --text-dim:    rgba(221,213,184,0.45);
+  --panel:       rgba(0,0,0,0.35);
+  --border:      rgba(201,169,60,0.22);
+  --shadow:      rgba(0,0,0,0.65);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Lato', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════ */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 85%, rgba(8,46,30,0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 15%, rgba(12,22,70,0.45) 0%, transparent 55%),
+    linear-gradient(170deg, #07091a 0%, #040610 100%);
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════ */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.45);
+  flex-shrink: 0;
+  gap: 16px;
+}
+.header-brand {
+  margin-left: 100px;
+  font-family: 'Cinzel', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 4px;
+  text-shadow: 0 0 24px rgba(201,169,60,0.4);
+  white-space: nowrap;
+}
+.header-stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.hstat {
+  text-align: center;
+  line-height: 1.2;
+}
+.hstat-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.hstat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN LAYOUT
+   ═══════════════════════════════════════════════ */
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   TABLE
+   ═══════════════════════════════════════════════ */
+.table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 50%, #0f5f3a 0%, #0a4028 55%, var(--felt-edge) 100%);
+}
+/* felt texture */
+.table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 9px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 9px);
+  pointer-events: none;
+  z-index: 0;
+}
+/* oval table border */
+.table::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50% / 20%;
+  border: 2px solid rgba(201,169,60,0.12);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.table-inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px 8px;
+  gap: 6px;
+  min-height: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   PLAYER ZONES
+   ═══════════════════════════════════════════════ */
+.zone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  flex-shrink: 0;
+}
+.zone.active-turn {
+  border-color: rgba(201,169,60,0.55);
+  box-shadow: 0 0 22px rgba(201,169,60,0.12), inset 0 0 12px rgba(201,169,60,0.04);
+}
+.zone-info {
+  min-width: 110px;
+}
+.zone-name {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.zone-chips {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+}
+.zone-hand-name {
+  font-size: 11px;
+  color: var(--gold-light);
+  min-height: 14px;
+  font-style: italic;
+}
+.zone-cards {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.zone-tags {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.tag {
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.4);
+  transition: all 0.25s;
+}
+.tag.sb  { background: rgba(80,160,80,0.2);  color: #85c885; }
+.tag.bb  { background: rgba(200,90,90,0.2);  color: #c88585; }
+.tag.btn { background: rgba(201,169,60,0.2); color: var(--gold); }
+.tag.act { background: rgba(201,169,60,0.18); color: var(--gold-light); animation: pulse-tag 1s infinite alternate; }
+.tag.fold-tag { background: rgba(160,50,50,0.2); color: #e08080; }
+.tag.call-tag { background: rgba(50,100,180,0.2); color: #80a8e0; }
+.tag.raise-tag { background: rgba(201,169,60,0.25); color: var(--gold); }
+.tag.check-tag { background: rgba(60,140,60,0.2); color: #80c080; }
+@keyframes pulse-tag {
+  from { opacity: 0.7; } to { opacity: 1; }
+}
+.bet-display {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: right;
+}
+.dealer-btn {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #1a0e00;
+  font-size: 8px;
+  font-weight: 900;
+  font-family: 'Cinzel', serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px rgba(201,169,60,0.3);
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+.dealer-btn.hidden { opacity: 0; pointer-events: none; }
+
+/* ═══════════════════════════════════════════════
+   COMMUNITY AREA
+   ═══════════════════════════════════════════════ */
+.community-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+}
+.comm-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.community-cards {
+  display: flex;
+  gap: 8px;
+}
+.card-ph {
+  width: 86px; height: 120px;
+  border-radius: 8px;
+  border: 2px dashed rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+.pot-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  min-width: 100px;
+}
+.pot-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.pot-amount {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.message-line {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+  text-align: center;
+  min-height: 20px;
+  text-shadow: 0 0 20px rgba(201,169,60,0.3);
+}
+.phase-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  text-align: center;
+}
+.blinds-note {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════════ */
+.cw { /* card wrapper */
+  perspective: 900px;
+  flex-shrink: 0;
+}
+.card {
+  width: 86px; height: 120px;
+  border-radius: 8px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+}
+.card.face-down { transform: rotateY(180deg); }
+.card-front, .card-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-front {
+  background: var(--cream);
+  color: #111;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5px 6px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.12);
+  transform: rotateY(0deg);
+}
+.card.red .card-front { color: var(--red); }
+.card-back {
+  transform: rotateY(180deg);
+  background: #1b3d7e;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 11px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 11px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.55);
+  border: 2px solid #2a5098;
+}
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  border-radius: 5px;
+}
+.cr-top, .cr-bot {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+.cr-bot { transform: rotate(180deg); text-align: right; }
+.cr-mid {
+  font-size: 36px;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Deal animation */
+@keyframes dealIn {
+  from { opacity: 0; transform: translateY(-24px) scale(0.82); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.cw.dealt { animation: dealIn 0.32s cubic-bezier(.22,1,.36,1) forwards; }
+
+/* Highlight winning card */
+.cw.winning .card-front {
+  box-shadow: 0 0 18px rgba(201,169,60,0.9), 0 4px 18px rgba(0,0,0,0.5);
+}
+
+/* ═══════════════════════════════════════════════
+   ACTION PANEL
+   ═══════════════════════════════════════════════ */
+.action-panel {
+  background: rgba(0,0,0,0.55);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px 14px;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.action-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 9px;
+}
+.btn {
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  font-family: 'Lato', sans-serif;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.28; cursor: not-allowed; transform: none !important; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+
+.btn-new   { background:#142a14; color:#76c876; border-color:#2e6a2e; }
+.btn-new:not(:disabled):hover { background:#1a361a; }
+.btn-fold  { background:#2a1010; color:#e07070; border-color:#6a2a2a; }
+.btn-fold:not(:disabled):hover { background:#361414; }
+.btn-check { background:#0e2a1a; color:#70c870; border-color:#256025; }
+.btn-check:not(:disabled):hover { background:#133520; }
+.btn-call  { background:#0e1e3a; color:#70a0e0; border-color:#254870; }
+.btn-call:not(:disabled):hover { background:#132645; }
+.btn-raise {
+  background: linear-gradient(135deg, #2a1c00, #3f2b00);
+  color: var(--gold);
+  border-color: #7a5800;
+}
+.btn-raise:not(:disabled):hover { background: linear-gradient(135deg, #382500, #503800); }
+
+.raise-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.raise-lbl { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.raise-slider {
+  width: 180px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.raise-val {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 65px;
+}
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR – HAND LOG
+   ═══════════════════════════════════════════════ */
+.sidebar {
+  width: 185px;
+  background: rgba(0,0,0,0.5);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.log-entry {
+  padding: 7px 9px;
+  border-radius: 7px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  border-left: 3px solid transparent;
+  line-height: 1.4;
+}
+.log-entry.win  { background:rgba(50,200,80,0.08);  border-color:#50c870; color:#90e890; }
+.log-entry.lose { background:rgba(220,60,60,0.08);  border-color:#c86060; color:#e89090; }
+.log-entry.push { background:rgba(200,180,50,0.08); border-color:#c8b450; color:#e8d890; }
+.log-hand { font-weight: 700; }
+.log-detail { color: inherit; opacity: 0.75; font-style: italic; }
+
+/* ═══════════════════════════════════════════════
+   OVERLAY
+   ═══════════════════════════════════════════════ */
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+#overlay.show { display: flex; }
+.ov-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(44px,11vw,110px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 5px;
+  text-align: center;
+}
+.ov-title.win  { color: var(--gold); text-shadow: 0 0 60px rgba(201,169,60,0.6); }
+.ov-title.lose { color: #e03030;    text-shadow: 0 0 60px rgba(200,50,50,0.6);  }
+.ov-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.55);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 0 20px;
+}
+.ov-btn {
+  padding: 13px 36px;
+  background: var(--gold);
+  color: #1a0e00;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 24px rgba(201,169,60,0.4);
+}
+.ov-btn:hover { transform: scale(1.05); box-shadow: 0 6px 32px rgba(201,169,60,0.6); }
+.ov-stats {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  font-family: 'Lato', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  .card { width: 64px; height: 90px; }
+  .card-ph { width: 64px; height: 90px; }
+  .cr-mid { font-size: 24px; }
+  .cr-top, .cr-bot { font-size: 13px; }
+  .hstat-value { font-size: 14px; }
+  .header-brand { font-size: 13px; letter-spacing: 2px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ HEADER ═══ -->
+<header>
+    <a href="menu.html" class="back-btn" onclick="showLoader()">← Menu</a>
+  <div class="header-brand">TEXAS HOLD'EM</div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-label">Pot</div>
+      <div class="hstat-value" id="hPot">$0</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Hand</div>
+      <div class="hstat-value" id="hHand">#0</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Blinds</div>
+      <div class="hstat-value" style="font-size:13px;padding-top:3px">$10/$20</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main>
+
+  <!-- TABLE -->
+  <div class="table">
+    <div class="table-inner">
+
+      <!-- AI ZONE -->
+      <div class="zone" id="zoneAI">
+        <div class="dealer-btn hidden" id="dealerAI">BTN</div>
+        <div class="zone-info">
+          <div class="zone-name">The House</div>
+          <div class="zone-chips">$<span id="aiChips">1000</span></div>
+          <div class="zone-hand-name" id="aiHandName"></div>
+        </div>
+        <div class="zone-cards" id="aiCards"></div>
+        <div class="zone-tags">
+          <div class="tag hidden" id="aiTag"></div>
+          <div class="bet-display" id="aiBetDisp"></div>
+        </div>
+      </div>
+
+      <!-- COMMUNITY AREA -->
+      <div class="community-area">
+        <div class="message-line" id="msgLine">Press "New Hand" to deal.</div>
+        <div class="comm-row">
+          <div>
+            <div class="phase-label" id="phaseLabel">WAITING</div>
+            <div class="community-cards" id="commCards"></div>
+          </div>
+          <div>
+            <div class="pot-box">
+              <div class="pot-label">Pot</div>
+              <div class="pot-amount" id="potAmt">$0</div>
+            </div>
+            <div class="blinds-note" id="toCallNote"></div>
+          </div>
+        </div>
+        <div class="blinds-note">Blinds: $10 / $20 &nbsp;·&nbsp; Dealer = Small Blind</div>
+      </div>
+
+      <!-- PLAYER ZONE -->
+      <div class="zone" id="zonePlayer">
+        <div class="dealer-btn hidden" id="dealerPlayer">BTN</div>
+        <div class="zone-info">
+          <div class="zone-name">You</div>
+          <div class="zone-chips">$<span id="playerChips">1000</span></div>
+          <div class="zone-hand-name" id="playerHandName"></div>
+        </div>
+        <div class="zone-cards" id="playerCards"></div>
+        <div class="zone-tags">
+          <div class="tag hidden" id="playerTag"></div>
+          <div class="bet-display" id="playerBetDisp"></div>
+        </div>
+      </div>
+
+    </div><!-- /table-inner -->
+
+    <!-- ACTION PANEL -->
+    <div class="action-panel">
+      <div class="action-row">
+        <button class="btn btn-new"   id="btnNew">New Hand</button>
+        <button class="btn btn-fold"  id="btnFold"  disabled>Fold</button>
+        <button class="btn btn-check" id="btnCheck" disabled>Check</button>
+        <button class="btn btn-call"  id="btnCall"  disabled>Call $0</button>
+        <button class="btn btn-raise" id="btnRaise" disabled>Raise</button>
+      </div>
+      <div class="raise-row">
+        <span class="raise-lbl">Raise to:</span>
+        <input type="range" class="raise-slider" id="raiseSlider" min="40" max="1000" step="5" value="40">
+        <span class="raise-val" id="raiseVal">$40</span>
+      </div>
+      <div class="status-bar">
+        <span id="sbLeft"></span>
+        <span id="sbMid"></span>
+        <span id="sbRight"></span>
+      </div>
+    </div>
+
+  </div><!-- /table -->
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-title">History</div>
+    <div id="logEntries"></div>
+  </div>
+
+</main>
+</div><!-- /app -->
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="ov-title" id="ovTitle">GAME OVER</div>
+  <div class="ov-sub"   id="ovSub"></div>
+  <div class="ov-stats" id="ovStats"></div>
+  <button class="ov-btn" onclick="resetGame()">Play Again</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════ */
+const RANKS  = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const SUITS  = ['♠','♥','♦','♣'];
+const RED_S  = new Set(['♥','♦']);
+const SB_AMT = 10, BB_AMT = 20;
+const START_CHIPS = 1000;
+
+/* ═══════════════════════════════════════════════════════════
+   CARD / DECK UTILS
+   ═══════════════════════════════════════════════════════════ */
+const rankVal = r => RANKS.indexOf(r) + 2;
+
+function makeDeck() {
+  return SUITS.flatMap(s => RANKS.map(r => ({ rank: r, suit: s })));
+}
+function shuffle(d) {
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = 0 | (Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HAND EVALUATOR  (best 5-of-7)
+   ═══════════════════════════════════════════════════════════ */
+function eval5(cards) {
+  const vs  = cards.map(c => rankVal(c.rank)).sort((a, b) => b - a);
+  const ss  = cards.map(c => c.suit);
+  const isF = ss.every(s => s === ss[0]);
+
+  let isSt = false, stTop = 0;
+  if (new Set(vs).size === 5) {
+    if (vs[0] - vs[4] === 4) { isSt = true; stTop = vs[0]; }
+    if (vs[0]===14&&vs[1]===5&&vs[2]===4&&vs[3]===3&&vs[4]===2) { isSt=true; stTop=5; }
+  }
+
+  const cnt = {};
+  vs.forEach(v => cnt[v] = (cnt[v] || 0) + 1);
+  const grp = Object.entries(cnt)
+    .map(([v, c]) => ({ v: +v, c }))
+    .sort((a, b) => b.c - a.c || b.v - a.v);
+  const [g0, g1, g2] = [grp[0]||{v:0,c:0}, grp[1]||{v:0,c:0}, grp[2]||{v:0,c:0}];
+
+  if (isF && isSt && stTop===14 && vs[1]===13) return {cat:9, tb:[14],             name:'Royal Flush'};
+  if (isF && isSt)            return {cat:8, tb:[stTop],            name:'Straight Flush'};
+  if (g0.c===4)               return {cat:7, tb:[g0.v,g1.v],        name:'Four of a Kind'};
+  if (g0.c===3&&g1.c===2)     return {cat:6, tb:[g0.v,g1.v],        name:'Full House'};
+  if (isF)                    return {cat:5, tb:vs,                  name:'Flush'};
+  if (isSt)                   return {cat:4, tb:[stTop],             name:'Straight'};
+  if (g0.c===3)               return {cat:3, tb:[g0.v,g1.v,g2.v],   name:'Three of a Kind'};
+  if (g0.c===2&&g1.c===2) {
+    const hi=Math.max(g0.v,g1.v), lo=Math.min(g0.v,g1.v);
+    return {cat:2, tb:[hi,lo,g2.v], name:'Two Pair'};
+  }
+  if (g0.c===2) return {cat:1, tb:[g0.v,...grp.slice(1).map(g=>g.v)], name:'One Pair'};
+  return {cat:0, tb:vs, name:'High Card'};
+}
+
+function cmpH(a, b) {
+  if (a.cat !== b.cat) return a.cat - b.cat;
+  for (let i = 0; i < Math.max(a.tb.length, b.tb.length); i++) {
+    const d = (a.tb[i]||0) - (b.tb[i]||0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+function bestHand(hole, comm) {
+  const all = [...hole, ...comm];
+  if (all.length < 5) return { cat: -1, tb: [], name: '—' };
+  let best = null;
+  const n = all.length;
+  for (let a=0;a<n-4;a++)
+  for (let b=a+1;b<n-3;b++)
+  for (let c=b+1;c<n-2;c++)
+  for (let d=c+1;d<n-1;d++)
+  for (let e=d+1;e<n;e++) {
+    const h = eval5([all[a],all[b],all[c],all[d],all[e]]);
+    if (!best || cmpH(h, best) > 0) best = h;
+  }
+  return best;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAME STATE
+   ═══════════════════════════════════════════════════════════ */
+let playerChips, aiChips, pot;
+let playerHole, aiHole, community, deck;
+let phase; // 'idle' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
+let dealerIsPlayer;   // true: player is dealer/SB
+let currentBet;       // amount everyone must match to stay in
+let pBetRound, aBetRound;   // how much each put in THIS betting round
+let pHandInv, aHandInv;     // total invested this hand (for log)
+let pActed, aActed;         // acted this betting round?
+let isPlayerTurn;
+let aiThinking;
+let handNum;
+let handsWon, handsLost;
+
+/* ═══════════════════════════════════════════════════════════
+   DOM
+   ═══════════════════════════════════════════════════════════ */
+const $  = id => document.getElementById(id);
+const btnNew    = $('btnNew');
+const btnFold   = $('btnFold');
+const btnCheck  = $('btnCheck');
+const btnCall   = $('btnCall');
+const btnRaise  = $('btnRaise');
+const raiseSlider = $('raiseSlider');
+const raiseValEl  = $('raiseVal');
+const msgEl     = $('msgLine');
+const hPotEl    = $('hPot');
+const potAmtEl  = $('potAmt');
+const hHandEl   = $('hHand');
+const phaseEl   = $('phaseLabel');
+const commEl    = $('commCards');
+const playerCardsEl = $('playerCards');
+const aiCardsEl     = $('aiCards');
+const playerChipsEl = $('playerChips');
+const aiChipsEl     = $('aiChips');
+const playerHandNameEl = $('playerHandName');
+const aiHandNameEl     = $('aiHandName');
+const playerTagEl   = $('playerTag');
+const aiTagEl       = $('aiTag');
+const playerBetDispEl = $('playerBetDisp');
+const aiBetDispEl   = $('aiBetDisp');
+const toCallNoteEl  = $('toCallNote');
+const sbLeft  = $('sbLeft');
+const sbMid   = $('sbMid');
+const sbRight = $('sbRight');
+const dealerPlayerEl = $('dealerPlayer');
+const dealerAIEl     = $('dealerAI');
+const zonePlayer     = $('zonePlayer');
+const zoneAI         = $('zoneAI');
+const logEntriesEl   = $('logEntries');
+const overlay        = $('overlay');
+const ovTitle        = $('ovTitle');
+const ovSub          = $('ovSub');
+const ovStats        = $('ovStats');
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════ */
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function setMsg(txt)   { msgEl.textContent = txt; }
+function setPot(n)     { pot = n; potAmtEl.textContent = '$'+n; hPotEl.textContent = '$'+n; }
+function setPhase(p, lbl) { phase = p; phaseEl.textContent = lbl || p.toUpperCase(); sbMid.textContent = lbl || p.toUpperCase(); }
+function updateChips() {
+  playerChipsEl.textContent = playerChips;
+  aiChipsEl.textContent     = aiChips;
+}
+
+function showTag(el, cls, txt) {
+  el.className = 'tag ' + cls;
+  el.textContent = txt;
+  el.classList.remove('hidden');
+}
+function hideTag(el) {
+  el.textContent = '';
+  el.className = 'tag hidden';
+}
+
+function updateDealerBtns() {
+  if (dealerIsPlayer) {
+    dealerPlayerEl.classList.remove('hidden');
+    dealerAIEl.classList.add('hidden');
+  } else {
+    dealerAIEl.classList.remove('hidden');
+    dealerPlayerEl.classList.add('hidden');
+  }
+}
+
+function updateBlindTags() {
+  if (phase === 'preflop') {
+    showTag(playerTagEl, dealerIsPlayer ? 'sb' : 'bb', dealerIsPlayer ? 'SB' : 'BB');
+    showTag(aiTagEl,     dealerIsPlayer ? 'bb' : 'sb', dealerIsPlayer ? 'BB' : 'SB');
+  } else {
+    hideTag(playerTagEl);
+    hideTag(aiTagEl);
+  }
+}
+
+function updateBetDisplay() {
+  playerBetDispEl.textContent = pBetRound > 0 ? `Bet: $${pBetRound}` : '';
+  aiBetDispEl.textContent     = aBetRound > 0 ? `Bet: $${aBetRound}` : '';
+  const toCall = Math.max(0, currentBet - pBetRound);
+  toCallNoteEl.textContent = toCall > 0 ? `To call: $${toCall}` : '';
+  sbLeft.textContent  = toCall > 0 ? `To call: $${toCall}` : 'No bet to call';
+  sbRight.textContent = playerChips > 0 ? `Your stack: $${playerChips}` : '';
+}
+
+function updateRaiseSlider() {
+  const minR = Math.max(currentBet * 2, BB_AMT * 2);
+  const maxR = pBetRound + playerChips; // total you can put in (allin)
+  const clampedMin = Math.min(minR, maxR);
+  raiseSlider.min = clampedMin;
+  raiseSlider.max = maxR;
+  if (+raiseSlider.value < clampedMin) raiseSlider.value = clampedMin;
+  if (+raiseSlider.value > maxR)       raiseSlider.value = maxR;
+  raiseValEl.textContent = '$' + raiseSlider.value;
+}
+
+function updateActionBtns() {
+  const inHand = ['preflop','flop','turn','river'].includes(phase);
+  const myTurn = inHand && isPlayerTurn && !aiThinking;
+  const toCall = Math.max(0, currentBet - pBetRound);
+
+  btnFold.disabled  = !myTurn;
+  btnCheck.disabled = !myTurn || toCall > 0;
+  btnCall.disabled  = !myTurn || toCall === 0;
+  btnRaise.disabled = !myTurn || playerChips === 0;
+  btnNew.disabled   = inHand;
+
+  btnCall.textContent = toCall > 0
+    ? `Call $${Math.min(toCall, playerChips)}`
+    : 'Call';
+
+  updateRaiseSlider();
+
+  zonePlayer.classList.toggle('active-turn', !!myTurn);
+  zoneAI.classList.toggle('active-turn', inHand && !isPlayerTurn);
+}
+
+function disableAllActions() {
+  btnFold.disabled = btnCheck.disabled = btnCall.disabled = btnRaise.disabled = true;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARD RENDERING
+   ═══════════════════════════════════════════════════════════ */
+function makeCardEl(card, faceDown) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cw';
+
+  const c = document.createElement('div');
+  c.className = 'card' + (faceDown ? ' face-down' : '') + (card && RED_S.has(card.suit) ? ' red' : '');
+
+  const front = document.createElement('div');
+  front.className = 'card-front';
+
+  if (card) {
+    const top = document.createElement('div');
+    top.className = 'cr-top';
+    top.textContent = card.rank + card.suit;
+    const mid = document.createElement('div');
+    mid.className = 'cr-mid';
+    mid.textContent = card.suit;
+    const bot = document.createElement('div');
+    bot.className = 'cr-bot';
+    bot.textContent = card.rank + card.suit;
+    front.append(top, mid, bot);
+  }
+
+  const back = document.createElement('div');
+  back.className = 'card-back';
+
+  c.append(front, back);
+  wrap.appendChild(c);
+  return wrap;
+}
+
+async function dealCard(container, card, faceDown, ms) {
+  await delay(ms);
+  const el = makeCardEl(card, faceDown);
+  el.classList.add('dealt');
+  container.appendChild(el);
+  return el;
+}
+
+function flipCard(wrap) {
+  return new Promise(resolve => {
+    wrap.querySelector('.card').classList.remove('face-down');
+    setTimeout(resolve, 580);
+  });
+}
+
+function renderCommPlaceholders() {
+  commEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const ph = document.createElement('div');
+    ph.className = 'card-ph';
+    commEl.appendChild(ph);
+  }
+}
+
+function updatePlayerHandName() {
+  if (community.length >= 3) {
+    const h = bestHand(playerHole, community);
+    playerHandNameEl.textContent = h.cat >= 0 ? h.name : '';
+  } else if (playerHole.length === 2) {
+    playerHandNameEl.textContent = playerHole.map(c => c.rank + c.suit).join('  ');
+  } else {
+    playerHandNameEl.textContent = '';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI DECISION
+   ═══════════════════════════════════════════════════════════ */
+function preFlopStr(hole) {
+  const r1 = rankVal(hole[0].rank), r2 = rankVal(hole[1].rank);
+  const hi = Math.max(r1,r2), lo = Math.min(r1,r2);
+  const suited = hole[0].suit === hole[1].suit;
+  const gap    = hi - lo;
+  if (r1 === r2)  return 0.45 + (hi - 2) * 0.042;   // pairs: 22→0.45, AA→~1
+  let base = (hi + lo - 4) / 24;
+  if (suited)   base += 0.07;
+  if (gap <= 1) base += 0.07;
+  else if (gap <= 3) base += 0.03;
+  if (hi === 14) base += 0.08;
+  return Math.max(0.05, Math.min(0.92, base));
+}
+
+function handStr() {
+  if (community.length === 0) return preFlopStr(aiHole);
+  const h = bestHand(aiHole, community);
+  if (h.cat < 0) return 0.1;
+  return Math.min(0.95, h.cat / 9 + (h.cat >= 5 ? 0.04 : 0));
+}
+
+function aiDecide() {
+  const str = handStr();
+  const toCall = Math.max(0, currentBet - aBetRound);
+  const potOdds = toCall > 0 ? toCall / (pot + toCall) : 0;
+  const bluff   = Math.random() < 0.10 && community.length >= 3;
+
+  // Strong hand or bluff → raise
+  if (str > 0.62 || bluff) {
+    let rAmt;
+    if (str > 0.82) rAmt = aBetRound + Math.round(pot * 0.85);
+    else            rAmt = aBetRound + Math.round(pot * 0.5);
+    rAmt = Math.max(rAmt, currentBet * 2);
+    rAmt = Math.min(rAmt, aBetRound + aiChips);
+    if (rAmt <= currentBet) return toCall === 0 ? { action:'check' } : { action:'call' };
+    return { action: 'raise', amount: rAmt };
+  }
+
+  // Decent hand vs pot odds → call/check
+  if (str > potOdds - 0.04 || str > 0.28) {
+    if (toCall === 0) return { action: 'check' };
+    if (toCall <= aiChips) return { action: 'call' };
+    return { action: 'call' };
+  }
+
+  // Weak hand
+  if (toCall === 0) return { action: 'check' };
+  if (toCall <= BB_AMT && str > 0.15) return { action: 'call' }; // cheap call
+  return { action: 'fold' };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BETTING MECHANICS
+   ═══════════════════════════════════════════════════════════ */
+function bettingRoundDone() {
+  const equal = pBetRound === aBetRound;
+  return equal && pActed && aActed;
+}
+
+async function aiTakeTurn() {
+  isPlayerTurn = false;
+  aiThinking   = true;
+  disableAllActions();
+  zoneAI.classList.add('active-turn');
+  zonePlayer.classList.remove('active-turn');
+  showTag(aiTagEl, 'act', '...');
+  setMsg('The House is thinking…');
+
+  await delay(850 + Math.random() * 700);
+
+  const dec = aiDecide();
+  aActed = true;
+  aiThinking = false;
+
+  hideTag(aiTagEl);
+
+  if (dec.action === 'fold') {
+    showTag(aiTagEl, 'fold-tag', 'FOLD');
+    setMsg('The House folds — you win the pot!');
+    await delay(700);
+    endHand('player', 'fold');
+    return;
+  }
+
+  if (dec.action === 'check') {
+    aBetRound = aBetRound; // no change
+    aiBetDispEl.textContent = '';
+    showTag(aiTagEl, 'check-tag', 'CHECK');
+    setMsg('The House checks.');
+  } else if (dec.action === 'call') {
+    const toCall = Math.min(currentBet - aBetRound, aiChips);
+    aiChips -= toCall;
+    aHandInv += toCall;
+    setPot(pot + toCall);
+    aBetRound += toCall;
+    showTag(aiTagEl, 'call-tag', `CALL $${toCall}`);
+    setMsg(`The House calls $${toCall}.`);
+  } else if (dec.action === 'raise') {
+    const newTotal = dec.amount;
+    const toAdd    = Math.min(newTotal - aBetRound, aiChips);
+    const actual   = aBetRound + toAdd;
+    aiChips -= toAdd;
+    aHandInv += toAdd;
+    setPot(pot + toAdd);
+    aBetRound = actual;
+    currentBet = actual;
+    pActed = false; // player must respond to raise
+    showTag(aiTagEl, 'raise-tag', `RAISE $${actual}`);
+    setMsg(`The House raises to $${actual}.`);
+  }
+
+  updateChips();
+  updateBetDisplay();
+  updateActionBtns();
+
+  await delay(550);
+
+  if (bettingRoundDone()) {
+    hideTag(aiTagEl);
+    await delay(200);
+    await advancePhase();
+  } else {
+    // Player's turn
+    isPlayerTurn = true;
+    hideTag(aiTagEl);
+    zoneAI.classList.remove('active-turn');
+    updateActionBtns();
+    setMsg('Your turn — what will you do?');
+  }
+}
+
+async function playerAct(action, raiseAmt) {
+  if (!isPlayerTurn || aiThinking) return;
+  pActed = true;
+  disableAllActions();
+
+  if (action === 'fold') {
+    showTag(playerTagEl, 'fold-tag', 'FOLD');
+    setMsg('You fold. The House wins the pot.');
+    await delay(700);
+    endHand('ai', 'fold');
+    return;
+  }
+
+  if (action === 'check') {
+    showTag(playerTagEl, 'check-tag', 'CHECK');
+    setMsg('You check.');
+  } else if (action === 'call') {
+    const toCall = Math.min(currentBet - pBetRound, playerChips);
+    playerChips -= toCall;
+    pHandInv += toCall;
+    setPot(pot + toCall);
+    pBetRound += toCall;
+    showTag(playerTagEl, 'call-tag', `CALL $${toCall}`);
+    setMsg(`You call $${toCall}.`);
+  } else if (action === 'raise') {
+    const newTotal = raiseAmt;
+    const toAdd    = Math.min(newTotal - pBetRound, playerChips);
+    const actual   = pBetRound + toAdd;
+    playerChips -= toAdd;
+    pHandInv += toAdd;
+    setPot(pot + toAdd);
+    pBetRound = actual;
+    currentBet = actual;
+    aActed = false; // AI must respond
+    showTag(playerTagEl, 'raise-tag', `RAISE $${actual}`);
+    setMsg(`You raise to $${actual}.`);
+  }
+
+  updateChips();
+  updateBetDisplay();
+
+  await delay(350);
+
+  if (bettingRoundDone()) {
+    hideTag(playerTagEl);
+    await delay(200);
+    await advancePhase();
+  } else {
+    isPlayerTurn = false;
+    hideTag(playerTagEl);
+    await aiTakeTurn();
+  }
+}
+
+function startBettingRound(playerFirst) {
+  pBetRound = 0; aBetRound = 0;
+  pActed = false; aActed = false;
+  currentBet = 0;
+  isPlayerTurn = playerFirst;
+  updateBetDisplay();
+  updateActionBtns();
+  if (!isPlayerTurn) {
+    setMsg('The House acts first…');
+    delay(400).then(() => aiTakeTurn());
+  } else {
+    setMsg('Your turn — what will you do?');
+  }
+}
+
+/* Pre-flop special: blinds already posted */
+function startPreFlopBetting() {
+  // Blinds are already in; set state accordingly
+  pActed = false; aActed = false;
+  // SB acts first pre-flop
+  isPlayerTurn = dealerIsPlayer;
+  updateBetDisplay();
+  updateActionBtns();
+  if (!isPlayerTurn) {
+    setMsg('The House acts first…');
+    delay(400).then(() => aiTakeTurn());
+  } else {
+    setMsg('Your turn — what will you do?');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAME PHASES
+   ═══════════════════════════════════════════════════════════ */
+async function advancePhase() {
+  if (phase === 'preflop') await dealFlop();
+  else if (phase === 'flop') await dealTurn();
+  else if (phase === 'turn') await dealRiver();
+  else if (phase === 'river') await doShowdown();
+}
+
+async function newHand() {
+  if (['preflop','flop','turn','river','showdown'].includes(phase)) return;
+
+  handNum++;
+  hHandEl.textContent = '#' + handNum;
+  btnNew.disabled = true;
+
+  // Check game over
+  if (playerChips <= 0 || aiChips <= 0) {
+    showOverlay(playerChips <= 0 ? 'lose' : 'win');
+    return;
+  }
+
+  // Reset hand state
+  playerHole = []; aiHole = []; community = [];
+  pHandInv = 0; aHandInv = 0;
+  deck = shuffle(makeDeck());
+  setPot(0);
+  playerCardsEl.innerHTML = '';
+  aiCardsEl.innerHTML = '';
+  renderCommPlaceholders();
+  playerHandNameEl.textContent = '';
+  aiHandNameEl.textContent = '';
+  hideTag(playerTagEl); hideTag(aiTagEl);
+  updateDealerBtns();
+
+  setPhase('preflop', 'PRE-FLOP');
+
+  // Post blinds
+  const pSB = dealerIsPlayer; // true → player is SB
+  const pBlind = pSB ? SB_AMT : BB_AMT;
+  const aBlind = pSB ? BB_AMT : SB_AMT;
+  const pActualBlind = Math.min(pBlind, playerChips);
+  const aActualBlind = Math.min(aBlind, aiChips);
+
+  playerChips -= pActualBlind;  pHandInv += pActualBlind;
+  aiChips     -= aActualBlind;  aHandInv += aActualBlind;
+  setPot(pActualBlind + aActualBlind);
+
+  pBetRound = pActualBlind;
+  aBetRound = aActualBlind;
+  currentBet = Math.max(BB_AMT, pActualBlind, aActualBlind);
+
+  updateChips();
+  updateBlindTags();
+  updateBetDisplay();
+  setMsg('Dealing…');
+
+  // Deal hole cards
+  aiHole.push(deck.pop());
+  playerHole.push(deck.pop());
+  aiHole.push(deck.pop());
+  playerHole.push(deck.pop());
+
+  await dealCard(aiCardsEl,     aiHole[0],     true,  0);
+  await dealCard(playerCardsEl, playerHole[0], false, 140);
+  await dealCard(aiCardsEl,     aiHole[1],     true,  280);
+  await dealCard(playerCardsEl, playerHole[1], false, 420);
+
+  await delay(200);
+  updatePlayerHandName();
+  startPreFlopBetting();
+}
+
+async function dealFlop() {
+  setPhase('flop', 'FLOP');
+  setMsg('Dealing the flop…');
+  disableAllActions();
+  currentBet = 0; pBetRound = 0; aBetRound = 0;
+  updateBetDisplay();
+  updateBlindTags(); // clears blind tags post-flop
+
+  for (let i = 0; i < 3; i++) community.push(deck.pop());
+
+  // Re-render community: 3 dealt + 2 placeholders
+  commEl.innerHTML = '';
+  for (let i = 0; i < 3; i++) await dealCard(commEl, community[i], false, i * 200);
+  const phT = document.createElement('div'); phT.className='card-ph'; commEl.appendChild(phT);
+  const phR = document.createElement('div'); phR.className='card-ph'; commEl.appendChild(phR);
+
+  await delay(250);
+  updatePlayerHandName();
+
+  // Post-flop: non-dealer (BB) acts first
+  startBettingRound(!dealerIsPlayer);
+}
+
+async function dealTurn() {
+  setPhase('turn', 'TURN');
+  setMsg('Dealing the turn…');
+  disableAllActions();
+  currentBet = 0; pBetRound = 0; aBetRound = 0;
+  updateBetDisplay();
+
+  community.push(deck.pop());
+
+  commEl.innerHTML = '';
+  for (let i = 0; i < 4; i++) await dealCard(commEl, community[i], false, i * 150);
+  const phR = document.createElement('div'); phR.className='card-ph'; commEl.appendChild(phR);
+
+  await delay(200);
+  updatePlayerHandName();
+  startBettingRound(!dealerIsPlayer);
+}
+
+async function dealRiver() {
+  setPhase('river', 'RIVER');
+  setMsg('Dealing the river…');
+  disableAllActions();
+  currentBet = 0; pBetRound = 0; aBetRound = 0;
+  updateBetDisplay();
+
+  community.push(deck.pop());
+
+  commEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) await dealCard(commEl, community[i], false, i * 120);
+
+  await delay(200);
+  updatePlayerHandName();
+  startBettingRound(!dealerIsPlayer);
+}
+
+async function doShowdown() {
+  setPhase('showdown', 'SHOWDOWN');
+  setMsg('Showdown!');
+  disableAllActions();
+  btnNew.disabled = true;
+
+  // Flip AI hole cards
+  const aiWraps = aiCardsEl.querySelectorAll('.cw');
+  for (const w of aiWraps) await flipCard(w);
+
+  await delay(450);
+
+  const pH = bestHand(playerHole, community);
+  const aH = bestHand(aiHole, community);
+
+  playerHandNameEl.textContent = pH.name;
+  aiHandNameEl.textContent     = aH.name;
+
+  const result = cmpH(pH, aH);
+  let winner;
+  if      (result > 0) { winner = 'player'; setMsg(`You win with ${pH.name}! 🎉`); }
+  else if (result < 0) { winner = 'ai';     setMsg(`The House wins with ${aH.name}.`); }
+  else                 { winner = 'push';   setMsg(`Chop — both have ${pH.name}.`); }
+
+  await delay(700);
+  endHand(winner, 'showdown');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   END HAND
+   ═══════════════════════════════════════════════════════════ */
+function endHand(winner, how) {
+  // All-in protection: return excess bet to over-bettor
+  const effInv  = Math.min(pHandInv, aHandInv);   // contested per-player amount
+  const pExcess = pHandInv - effInv;               // return to player if they over-invested
+  const aExcess = aHandInv - effInv;               // return to AI
+  const effPot  = effInv * 2;                      // actual contested pot
+
+  // Return any uncalled excess
+  playerChips += pExcess;
+  aiChips     += aExcess;
+
+  let logType, logDetail;
+
+  if (winner === 'player') {
+    playerChips += effPot;          // player wins both sides of contested pot
+    logType   = 'win';
+    logDetail = `+$${effInv} (${playerHandNameEl.textContent || 'fold'})`;
+    handsWon++;
+  } else if (winner === 'ai') {
+    aiChips   += effPot;
+    logType   = 'lose';
+    logDetail = `-$${effInv}`;
+    handsLost++;
+  } else {
+    // chop — split contested pot, each gets theirs back
+    playerChips += Math.floor(effPot / 2);
+    aiChips     += effPot - Math.floor(effPot / 2);
+    logType   = 'push';
+    logDetail = 'Chop';
+  }
+
+  setPot(0);
+  updateChips();
+
+  // Log entry
+  addLog(logType, `Hand #${handNum}`, logDetail);
+
+  // Rotate dealer
+  dealerIsPlayer = !dealerIsPlayer;
+
+  setPhase('idle', 'WAITING');
+  disableAllActions();
+  btnNew.disabled = false;
+  hideTag(playerTagEl);
+  hideTag(aiTagEl);
+  updateBetDisplay();
+  toCallNoteEl.textContent = '';
+
+  // Check game over
+  if (playerChips <= 0 || aiChips <= 0) {
+    const result = playerChips <= 0 ? 'lose' : 'win';
+    setTimeout(() => showOverlay(result), 900);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOG
+   ═══════════════════════════════════════════════════════════ */
+function addLog(type, title, detail) {
+  const e = document.createElement('div');
+  e.className = 'log-entry ' + type;
+  e.innerHTML = `<div class="log-hand">${title}</div><div class="log-detail">${detail}</div>`;
+  logEntriesEl.prepend(e);
+  while (logEntriesEl.children.length > 22) logEntriesEl.removeChild(logEntriesEl.lastChild);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+function showOverlay(type) {
+  overlay.classList.add('show');
+  if (type === 'win') {
+    ovTitle.textContent    = 'YOU WIN!';
+    ovTitle.className      = 'ov-title win';
+    ovSub.textContent      = 'The House is broke. Exceptional play.';
+  } else {
+    ovTitle.textContent    = 'BUSTED';
+    ovTitle.className      = 'ov-title lose';
+    ovSub.textContent      = 'You\'ve run out of chips. Better luck next time.';
+  }
+  ovStats.textContent = `Hands played: ${handNum}  ·  Won: ${handsWon}  ·  Lost: ${handsLost}`;
+}
+
+function resetGame() {
+  overlay.classList.remove('show');
+  playerChips = START_CHIPS;
+  aiChips     = START_CHIPS;
+  pot = 0; handNum = 0; handsWon = 0; handsLost = 0;
+  hHandEl.textContent = '#0';
+  phase = 'idle';
+  dealerIsPlayer = true;
+  playerCardsEl.innerHTML = '';
+  aiCardsEl.innerHTML = '';
+  renderCommPlaceholders();
+  setPot(0);
+  updateChips();
+  logEntriesEl.innerHTML = '';
+  btnNew.disabled = false;
+  disableAllActions();
+  setMsg('Press "New Hand" to deal.');
+  setPhase('idle', 'WAITING');
+  playerHandNameEl.textContent = '';
+  aiHandNameEl.textContent = '';
+  hideTag(playerTagEl); hideTag(aiTagEl);
+  playerBetDispEl.textContent = '';
+  aiBetDispEl.textContent = '';
+  toCallNoteEl.textContent = '';
+  sbLeft.textContent = ''; sbMid.textContent = ''; sbRight.textContent = '';
+  updateDealerBtns();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════════════════ */
+btnNew.addEventListener('click',  () => newHand());
+btnFold.addEventListener('click', () => playerAct('fold'));
+btnCheck.addEventListener('click',() => playerAct('check'));
+btnCall.addEventListener('click', () => playerAct('call'));
+btnRaise.addEventListener('click',() => playerAct('raise', +raiseSlider.value));
+raiseSlider.addEventListener('input', () => { raiseValEl.textContent = '$' + raiseSlider.value; });
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+(function init() {
+  playerChips = START_CHIPS;
+  aiChips     = START_CHIPS;
+  pot = 0; handNum = 0; handsWon = 0; handsLost = 0;
+  phase = 'idle';
+  dealerIsPlayer = true;
+  aiThinking = false;
+  updateChips();
+  renderCommPlaceholders();
+  setPot(0);
+  setPhase('idle', 'WAITING');
+  updateDealerBtns();
+  btnNew.disabled = false;
+  disableAllActions();
+})();
+function showLoader() {
+    document.getElementById("loader")?.classList.add("active");
+}
+</script>
+</body>
+</html>

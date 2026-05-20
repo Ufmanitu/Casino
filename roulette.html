@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Roulette Royale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/*menu gomb*/
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 18px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, gold, orange);
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255, 200, 0, 0.7);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    z-index: 999;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 200, 0, 1);
+}
+:root {
+  --gold:       #d4af37;
+  --gold-lt:    #f0d570;
+  --gold-dim:   rgba(212,175,55,0.3);
+  --felt:       #0a4a2c;
+  --felt-dk:    #062d1a;
+  --bg:         #0a0a0a;
+  --panel:      rgba(255,255,255,0.03);
+  --border:     rgba(212,175,55,0.28);
+  --text:       #f0e8d8;
+  --muted:      #7a7060;
+  --red:        #c41e3a;
+  --black-cell: #111;
+  --win:        #2ed573;
+  --lose:       #ff4757;
+  --radius:     6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{
+  min-height:100vh;
+  background:#0a0a0a;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 10%, rgba(212,175,55,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 90%, rgba(10,74,44,0.10) 0%, transparent 60%);
+  color:var(--text);
+  font-family:'Raleway',sans-serif;
+  overflow-x:hidden;
+}
+
+/* ── Header ─────────────────────────────────── */
+.header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 28px;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:50;
+}
+.logo{
+  margin-left: 100px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;font-weight:700;
+  color:var(--gold);letter-spacing:3px;text-transform:uppercase;
+}
+.logo span{color:rgba(212,175,55,0.45)}
+.header-right{display:flex;align-items:center;gap:24px}
+.balance-box{text-align:right}
+.balance-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px}
+.balance-amt{
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px;font-weight:700;color:var(--gold);
+  transition:color .4s;
+}
+.balance-amt.flash-win{color:var(--win)}
+.balance-amt.flash-lose{color:var(--lose)}
+
+/* ── Layout ─────────────────────────────────── */
+.main{
+  display:flex;gap:24px;
+  padding:24px 28px;
+  max-width:1800px;margin:0 auto;
+  align-items:flex-start;
+}
+.left-col{flex:0 0 500px;display:flex;flex-direction:column;gap:14px}
+.right-col{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* ── Wheel ───────────────────────────────────── */
+.wheel-wrap{
+  position:relative;
+  border-radius:50%;
+  padding:8px;
+  background:radial-gradient(circle at 40% 35%,#221000,#0d0500);
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 0 5px rgba(0,0,0,.8),
+    0 0 50px rgba(212,175,55,.18),
+    inset 0 0 30px rgba(0,0,0,.5);
+}
+.wheel-wrap svg{display:block;width:100%}
+
+/* ── Spin button ─────────────────────────────── */
+.spin-btn{
+  width:100%;padding:13px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,#9a6f00,var(--gold),#c8a820);
+  color:#000;
+  font-family:'Cormorant Garamond',serif;
+  font-size:17px;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;
+  box-shadow:0 4px 24px rgba(212,175,55,.28);
+  transition:all .2s;
+}
+.spin-btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 8px 36px rgba(212,175,55,.45);
+}
+.spin-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ── Side panels ─────────────────────────────── */
+.side-panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px 14px;
+}
+.side-panel-label{
+  font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1.5px;
+  margin-bottom:10px;
+}
+.history-row{display:flex;gap:5px;flex-wrap:wrap}
+.h-dot{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:11px;font-weight:700;
+  transition:transform .2s;
+  flex-shrink:0;
+}
+.h-dot:hover{transform:scale(1.15)}
+.h-dot.red{background:var(--red)}
+.h-dot.black{background:#1e1e1e;border:1px solid #333}
+.h-dot.zero{background:#16a34a}
+.stats-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.stat-item{
+  background:rgba(255,255,255,0.03);
+  border-radius:6px;padding:8px 10px;
+}
+.stat-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;font-weight:700;
+}
+.stat-num.red-stat{color:var(--red)}
+.stat-num.black-stat{color:#888}
+.stat-num.green-stat{color:#16a34a}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+/* ── Chips ───────────────────────────────────── */
+.chips-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chips-bar-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-right:2px}
+.chip{
+  width:50px;height:50px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;
+  cursor:pointer;
+  border:3px solid rgba(255,255,255,.15);
+  box-shadow:0 4px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2);
+  transition:all .15s;
+  position:relative;user-select:none;
+}
+.chip::before{
+  content:'';position:absolute;inset:4px;
+  border-radius:50%;border:1px dashed rgba(255,255,255,.22);
+  pointer-events:none;
+}
+.chip:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.chip.selected{
+  transform:translateY(-6px) scale(1.12);
+  box-shadow:0 10px 28px rgba(255,255,255,.2),inset 0 1px 0 rgba(255,255,255,.3);
+}
+.chip[data-v="1"]   {background:radial-gradient(circle at 38% 32%,#f0f0f0,#999);color:#000}
+.chip[data-v="5"]   {background:radial-gradient(circle at 38% 32%,#ffa07a,#c0392b);color:#fff}
+.chip[data-v="25"]  {background:radial-gradient(circle at 38% 32%,#6ee7b7,#059669);color:#000}
+.chip[data-v="100"] {background:radial-gradient(circle at 38% 32%,#93c5fd,#1d4ed8);color:#fff}
+.chip[data-v="500"] {background:radial-gradient(circle at 38% 32%,#ddd6fe,#7c3aed);color:#fff}
+
+/* ── Felt table ──────────────────────────────── */
+.felt-table{
+  background:linear-gradient(140deg,#0d5c36,#0a4a2c,#073d23);
+  border-radius:12px;
+  padding:20px 20px 18px;
+  border:2px solid rgba(212,175,55,.35);
+  box-shadow:inset 0 0 50px rgba(0,0,0,.35),0 8px 40px rgba(0,0,0,.6);
+  position:relative;
+}
+/* Subtle felt texture overlay */
+.felt-table::before{
+  content:'';
+  position:absolute;inset:0;border-radius:12px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='.6' fill='rgba(255,255,255,0.015)'/%3E%3C/svg%3E");
+  pointer-events:none;
+}
+
+/* Table grid: col1=zero(48px), col2-13=12 number cols, col14=col-bets(48px) */
+.table-grid{
+  display:grid;
+  grid-template-columns:56px repeat(12,1fr) 56px;
+  grid-template-rows:repeat(3,60px) 44px 44px;
+  gap:4px;
+  position:relative;z-index:1;
+}
+
+/* ── Bet cells ───────────────────────────────── */
+.bet-cell{
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:16px;font-weight:700;
+  cursor:pointer;
+  position:relative;
+  transition:filter .12s,transform .1s;
+  user-select:none;
+  border:1px solid rgba(255,255,255,.07);
+}
+.bet-cell:hover{filter:brightness(1.35);transform:scale(1.06);z-index:5;border-color:rgba(255,255,255,.4)}
+.bet-cell.red{background:linear-gradient(175deg,#c41e3a,#8b0000)}
+.bet-cell.black{background:linear-gradient(175deg,#1e1e1e,#060606)}
+.bet-cell.zero{
+  grid-column:1;grid-row:1/4;
+  background:linear-gradient(175deg,#1db954,#0a7c30);
+  font-size:22px;
+}
+.bet-cell.col-bet{
+  grid-column:14;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  font-size:13px;font-weight:600;
+  letter-spacing:-0.5px;
+}
+.bet-cell.dozen{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:14px}
+.bet-cell.outside{font-size:14px;font-weight:600;border:1px solid rgba(255,255,255,.12)}
+.bet-cell.outside.red{background:linear-gradient(175deg,#c41e3a,#8b0000)}
+.bet-cell.outside.black{background:linear-gradient(175deg,#1e1e1e,#060606)}
+.bet-cell.outside:not(.red):not(.black){background:rgba(255,255,255,.06)}
+
+/* Hover highlight: dim non-covered number cells */
+.table-grid.hovering .bet-cell.number-cell{filter:brightness(.55)}
+.table-grid.hovering .bet-cell.number-cell.covered{filter:brightness(1.4);border-color:rgba(255,220,0,.6)}
+
+/* Bet amount badge */
+.bet-badge{
+  position:absolute;top:-9px;right:-5px;
+  background:radial-gradient(circle at 38% 32%,#ffd700,#a07800);
+  color:#000;font-size:9px;font-weight:800;
+  border-radius:10px;padding:2px 5px;min-width:18px;text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
+  pointer-events:none;z-index:6;
+  font-family:'Raleway',sans-serif;
+}
+
+/* Win pulse */
+.win-pulse{animation:winPulse .7s ease 4}
+@keyframes winPulse{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(2.2) drop-shadow(0 0 10px gold)}
+}
+
+/* ── Controls ────────────────────────────────── */
+.controls-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{
+  padding:9px 15px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:var(--text);
+  font-family:'Raleway',sans-serif;font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.danger{border-color:rgba(255,71,87,.35);color:#ff6b78}
+.btn.danger:hover:not(:disabled){background:rgba(255,71,87,.1)}
+.total-bet-display{
+  margin-left:auto;
+  font-size:13px;color:var(--muted);
+}
+.total-bet-display strong{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;color:var(--gold);margin-left:4px;
+}
+
+/* ── Result overlay ──────────────────────────── */
+.overlay{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  z-index:200;
+  background:rgba(4,4,4,.96);
+  border:1.5px solid var(--gold);
+  border-radius:16px;
+  padding:30px 52px;
+  text-align:center;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+  backdrop-filter:blur(16px);
+  box-shadow:0 0 80px rgba(212,175,55,.12);
+  min-width:240px;
+}
+.overlay.show{transform:translate(-50%,-50%) scale(1)}
+.ov-number{
+  font-family:'Cormorant Garamond',serif;
+  font-size:80px;font-weight:700;line-height:1;
+}
+.ov-number.red{color:var(--red)}
+.ov-number.black{color:#666}
+.ov-number.zero{color:#1db954}
+.ov-color{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-top:2px}
+.ov-payout{
+  margin-top:16px;
+  font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;
+}
+.ov-payout.win{color:var(--win)}
+.ov-payout.lose{color:var(--lose)}
+.ov-payout.push{color:var(--muted)}
+
+/* ── Toast ───────────────────────────────────── */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:#181818;
+  border:1px solid var(--gold-dim);
+  color:var(--gold);
+  padding:10px 22px;border-radius:8px;
+  font-size:13px;font-weight:500;
+  z-index:300;opacity:0;
+  animation:toastAnim 2.8s ease forwards;
+  pointer-events:none;
+  white-space:nowrap;
+}
+@keyframes toastAnim{
+  0%{opacity:0;transform:translateX(-50%) translateY(8px)}
+  15%{opacity:1;transform:translateX(-50%) translateY(0)}
+  75%{opacity:1}
+  100%{opacity:0;transform:translateX(-50%) translateY(-4px)}
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media(max-width:1080px){
+  .main{flex-direction:column;align-items:center}
+  .left-col{flex:0 0 auto;width:100%;max-width:380px}
+  .right-col{width:100%}
+}
+@media(max-width:600px){
+  .table-grid{grid-template-columns:32px repeat(12,1fr) 32px}
+  .bet-cell{font-size:11px}
+  .bet-cell.zero{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <a href="menu.html" class="back-btn" onclick="showLoader()">← Menu</a>
+  <div class="logo">♦ <span>Roulette</span> Royale <span>♦</span></div>
+  <div class="header-right">
+    <div class="balance-box">
+      <div class="balance-label">Balance</div>
+      <div class="balance-amt" id="balanceAmt">$1,000</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT: Wheel -->
+  <div class="left-col">
+    <div class="wheel-wrap">
+      <svg viewBox="-262 -262 524 524" xmlns="http://www.w3.org/2000/svg">
+        <!-- Static ball track ring (outside the wheel group, doesn't rotate) -->
+        <circle r="248" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+        <g id="wheelG">
+          <!-- Outer wood rim -->
+          <circle r="258" fill="#4a2800"/>
+          <circle r="255" fill="none" stroke="#c9a26b" stroke-width="3"/>
+          <circle r="250" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- Pockets -->
+          <g id="pocketsG"></g>
+          <!-- Inner gold border -->
+          <circle r="170" fill="none" stroke="#c9a26b" stroke-width="5"/>
+          <!-- Center cone decoration -->
+          <circle r="82" fill="#4a2800"/>
+          <circle r="80" fill="none" stroke="#c9a26b" stroke-width="2"/>
+          <circle id="centerDisk" r="68" fill="#2e1500"/>
+          <circle r="22" fill="#c9a26b"/>
+          <circle r="18" fill="#2e1500"/>
+          <circle r="5" fill="#c9a26b"/>
+        </g>
+
+        <!-- Ball (above wheel, not in wheelG so it doesn't rotate with it) -->
+        <circle id="ballEl" r="8" cx="0" cy="-248"
+          fill="#f8f8f8"
+          filter="drop-shadow(0 0 4px rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.6))"/>
+
+        <!-- Result number in center (above wheel) -->
+        <text id="resultSVGText"
+          x="0" y="8"
+          text-anchor="middle" dominant-baseline="middle"
+          font-family="'Cormorant Garamond',serif"
+          font-size="34" font-weight="700"
+          fill="#fff" opacity="0"
+          style="transition:opacity .2s; pointer-events:none"/>
+      </svg>
+    </div>
+
+    <button class="spin-btn" id="spinBtn">🎰 &nbsp;Spin</button>
+
+    <!-- History -->
+    <div class="side-panel">
+      <div class="side-panel-label">Last Numbers</div>
+      <div class="history-row" id="historyRow">
+        <span style="color:#444;font-size:12px">No spins yet</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="side-panel" id="statsPanel" style="display:none">
+      <div class="side-panel-label">Session Stats</div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Table -->
+  <div class="right-col">
+
+    <!-- Chips -->
+    <div class="chips-bar">
+      <span class="chips-bar-label">Chip:</span>
+      <div class="chip" data-v="1">1</div>
+      <div class="chip" data-v="5">5</div>
+      <div class="chip" data-v="25">25</div>
+      <div class="chip" data-v="100">100</div>
+      <div class="chip" data-v="500">500</div>
+      <div style="margin-left:auto;font-size:11px;color:var(--muted)">Pick chip → click bet area</div>
+    </div>
+
+    <!-- Felt table -->
+    <div class="felt-table">
+      <div class="table-grid" id="tableGrid">
+
+        <!-- 0: col 1, rows 1-3 -->
+        <div class="bet-cell zero" data-bet="0" style="grid-column:1;grid-row:1/4">0</div>
+
+        <!-- Numbers 1-36 added by JS (cols 2-13, rows 1-3) -->
+
+        <!-- Column bets (2:1) — col 14, rows 1/2/3 -->
+        <div class="bet-cell col-bet" data-bet="col3" style="grid-column:14;grid-row:1">2:1</div>
+        <div class="bet-cell col-bet" data-bet="col2" style="grid-column:14;grid-row:2">2:1</div>
+        <div class="bet-cell col-bet" data-bet="col1" style="grid-column:14;grid-row:3">2:1</div>
+
+        <!-- Dozen bets — row 4, cols 2-5 / 6-9 / 10-13 -->
+        <div class="bet-cell dozen" data-bet="1to12"  style="grid-column:2/6; grid-row:4">1<sup>st</sup> 12</div>
+        <div class="bet-cell dozen" data-bet="13to24" style="grid-column:6/10;grid-row:4">2<sup>nd</sup> 12</div>
+        <div class="bet-cell dozen" data-bet="25to36" style="grid-column:10/14;grid-row:4">3<sup>rd</sup> 12</div>
+
+        <!-- Outside bets — row 5, cols 2-3 / 4-5 / 6-7 / 8-9 / 10-11 / 12-13 -->
+        <div class="bet-cell outside"       data-bet="1to18"  style="grid-column:2/4; grid-row:5">1–18</div>
+        <div class="bet-cell outside"       data-bet="even"   style="grid-column:4/6; grid-row:5">Even</div>
+        <div class="bet-cell outside red"   data-bet="red"    style="grid-column:6/8; grid-row:5">Red</div>
+        <div class="bet-cell outside black" data-bet="black"  style="grid-column:8/10;grid-row:5">Black</div>
+        <div class="bet-cell outside"       data-bet="odd"    style="grid-column:10/12;grid-row:5">Odd</div>
+        <div class="bet-cell outside"       data-bet="19to36" style="grid-column:12/14;grid-row:5">19–36</div>
+
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-row">
+      <button class="btn danger" id="clearBtn">✕ Clear</button>
+      <button class="btn" id="undoBtn">↩ Undo</button>
+      <button class="btn" id="repeatBtn" disabled>↺ Repeat</button>
+      <button class="btn" id="doubleBtn" disabled>×2 Double</button>
+      <div class="total-bet-display">Bet: <strong id="totalBetAmt">$0</strong></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="overlay">
+  <div class="ov-number" id="ovNumber">7</div>
+  <div class="ov-color"  id="ovColor">Red</div>
+  <div class="ov-payout" id="ovPayout">+$350</div>
+</div>
+
+<script>
+/* ============================================================
+   ROULETTE ROYALE  ·  Full game script
+   ============================================================ */
+
+// ── Constants ──────────────────────────────────────────────
+const ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const REDS  = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const SLICE = 360 / ORDER.length;  // degrees per pocket
+const OUT_R = 235;   // outer radius of pockets
+const IN_R  = 170;   // inner radius
+const TRACK_R  = 248; // ball track radius (outer rim)
+const POCKET_R = 198; // ball resting radius (mid-pocket)
+
+// ── State ──────────────────────────────────────────────────
+let balance      = 1000;
+let selectedChip = null;
+let bets         = {};      // { betKey: totalAmount }
+let lastBets     = {};      // for Repeat
+let betStack     = [];      // [{ key, amount }] for Undo
+let history      = [];      // last 20 winning numbers
+let sessionStats = { spins:0, red:0, black:0, zero:0 };
+let animating    = false;
+let wheelAngle   = 0;       // accumulated wheel angle (CW)
+
+// ── DOM refs ───────────────────────────────────────────────
+const wheelG       = document.getElementById('wheelG');
+const pocketsG     = document.getElementById('pocketsG');
+const ballEl       = document.getElementById('ballEl');
+const centerDisk   = document.getElementById('centerDisk');
+const resultSVG    = document.getElementById('resultSVGText');
+const spinBtn      = document.getElementById('spinBtn');
+const balanceAmt   = document.getElementById('balanceAmt');
+const historyRow   = document.getElementById('historyRow');
+const statsPanel   = document.getElementById('statsPanel');
+const statsGrid    = document.getElementById('statsGrid');
+const totalBetAmt  = document.getElementById('totalBetAmt');
+const overlay      = document.getElementById('overlay');
+const ovNumber     = document.getElementById('ovNumber');
+const ovColor      = document.getElementById('ovColor');
+const ovPayout     = document.getElementById('ovPayout');
+const tableGrid    = document.getElementById('tableGrid');
+const clearBtn     = document.getElementById('clearBtn');
+const undoBtn      = document.getElementById('undoBtn');
+const repeatBtn    = document.getElementById('repeatBtn');
+const doubleBtn    = document.getElementById('doubleBtn');
+
+// ── Helpers ────────────────────────────────────────────────
+function polar(r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: Math.cos(rad) * r, y: Math.sin(rad) * r };
+}
+function arc(r1, r2, a1, a2) {
+  const p1 = polar(r2, a2), p2 = polar(r2, a1),
+        p3 = polar(r1, a1), p4 = polar(r1, a2);
+  return `M${p1.x} ${p1.y} A${r2} ${r2} 0 0 0 ${p2.x} ${p2.y}` +
+         `L${p3.x} ${p3.y} A${r1} ${r1} 0 0 1 ${p4.x} ${p4.y}Z`;
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function easeOutCubic(t) { return 1 - Math.pow(1-t, 3); }
+function easeOutQuart(t) { return 1 - Math.pow(1-t, 4); }
+function easeInCubic(t)  { return t * t * t; }
+function fmt(n) { return '$' + n.toLocaleString(); }
+
+// ── Build SVG Pockets ──────────────────────────────────────
+const pocketPaths = [];
+ORDER.forEach((n, i) => {
+  const a1 = i * SLICE, a2 = a1 + SLICE;
+  const fill = n === 0 ? '#16a34a' : REDS.has(n) ? '#c41e3a' : '#111111';
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d', arc(IN_R, OUT_R, a1, a2));
+  path.setAttribute('fill', fill);
+  path.setAttribute('stroke', 'rgba(180,140,80,0.25)');
+  path.setAttribute('stroke-width', '0.6');
+  pocketsG.appendChild(path);
+  pocketPaths.push(path);
+
+  const mid = polar((OUT_R + IN_R) / 2, a1 + SLICE / 2);
+  const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x', mid.x); t.setAttribute('y', mid.y);
+  t.setAttribute('fill', '#fff'); t.setAttribute('font-size', '11');
+  t.setAttribute('font-weight', '700');
+  t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+  t.setAttribute('transform', `rotate(${a1 + SLICE/2},${mid.x},${mid.y})`);
+  t.setAttribute('pointer-events','none');
+  t.textContent = n;
+  pocketsG.appendChild(t);
+});
+
+// ── Build Number Grid Cells ────────────────────────────────
+//  Table layout (horizontal):
+//  Row 1 (top): 3,6,9,...,36   (n%3===0) → Column 3 bet
+//  Row 2 (mid): 2,5,8,...,35   (n%3===2) → Column 2 bet
+//  Row 3 (bot): 1,4,7,...,34   (n%3===1) → Column 1 bet
+for (let n = 1; n <= 36; n++) {
+  const gridCol = Math.ceil(n / 3) + 1; // 2..13 (offset by 1 for zero col)
+  const mod = n % 3;
+  const gridRow = mod === 0 ? 1 : mod === 2 ? 2 : 3;
+
+  const cell = document.createElement('div');
+  cell.className = 'bet-cell number-cell ' + (REDS.has(n) ? 'red' : 'black');
+  cell.dataset.bet = String(n);
+  cell.dataset.n = String(n);
+  cell.textContent = String(n);
+  cell.style.gridColumn = gridCol;
+  cell.style.gridRow = gridRow;
+  tableGrid.appendChild(cell);
+}
+
+// ── Hover highlight for outside/dozen/col bets ─────────────
+function coveredBy(betKey) {
+  // Returns set of numbers covered by this bet key
+  const s = new Set();
+  for (let n = 1; n <= 36; n++) {
+    if (wins(betKey, n)) s.add(n);
+  }
+  if (betKey === '0') s.add(0);
+  return s;
+}
+function addHoverHighlight(el) {
+  const key = el.dataset.bet;
+  if (!key) return;
+  const covered = coveredBy(key);
+  el.addEventListener('mouseenter', () => {
+    tableGrid.classList.add('hovering');
+    tableGrid.querySelectorAll('.number-cell').forEach(c => {
+      if (covered.has(Number(c.dataset.n))) c.classList.add('covered');
+    });
+    // Also highlight zero cell if covered
+    if (covered.has(0)) {
+      const zCell = tableGrid.querySelector('[data-bet="0"]');
+      if (zCell) zCell.classList.add('covered');
+    }
+  });
+  el.addEventListener('mouseleave', () => {
+    tableGrid.classList.remove('hovering');
+    tableGrid.querySelectorAll('.covered').forEach(c => c.classList.remove('covered'));
+  });
+}
+tableGrid.querySelectorAll('.dozen,.col-bet,.outside,.zero').forEach(addHoverHighlight);
+
+// ── Chip selection ─────────────────────────────────────────
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    selectedChip = Number(chip.dataset.v);
+  });
+});
+
+// ── Betting ────────────────────────────────────────────────
+function totalBet() { return Object.values(bets).reduce((s,v)=>s+v,0); }
+
+function refreshTotalDisplay() {
+  const t = totalBet();
+  totalBetAmt.textContent = fmt(t);
+  doubleBtn.disabled = (t === 0 || t * 2 > balance);
+}
+
+function getBadge(cell) { return cell.querySelector('.bet-badge'); }
+function setBadge(cell, amount) {
+  let b = getBadge(cell);
+  if (amount > 0) {
+    if (!b) { b = document.createElement('div'); b.className = 'bet-badge'; cell.appendChild(b); }
+    b.textContent = amount;
+  } else { if (b) b.remove(); }
+}
+function updateCellBadges(key) {
+  const amt = bets[key] || 0;
+  tableGrid.querySelectorAll(`[data-bet="${key}"]`).forEach(c => setBadge(c, amt));
+}
+
+function placeBet(key) {
+  if (!selectedChip) { toast('Select a chip first!'); return; }
+  if (selectedChip > balance - totalBet()) { toast('Not enough balance!'); return; }
+  bets[key] = (bets[key] || 0) + selectedChip;
+  betStack.push({ key, amount: selectedChip });
+  updateCellBadges(key);
+  refreshTotalDisplay();
+}
+
+// Attach click to all bet cells
+tableGrid.querySelectorAll('[data-bet]').forEach(cell => {
+  cell.addEventListener('click', () => {
+    if (animating) return;
+    placeBet(cell.dataset.bet);
+  });
+});
+
+// ── Controls ───────────────────────────────────────────────
+clearBtn.addEventListener('click', () => {
+  if (animating) return;
+  Object.keys(bets).forEach(k => { bets[k] = 0; updateCellBadges(k); });
+  bets = {}; betStack = [];
+  refreshTotalDisplay();
+});
+
+undoBtn.addEventListener('click', () => {
+  if (animating || betStack.length === 0) return;
+  const last = betStack.pop();
+  bets[last.key] = (bets[last.key] || 0) - last.amount;
+  if (bets[last.key] <= 0) delete bets[last.key];
+  updateCellBadges(last.key);
+  refreshTotalDisplay();
+});
+
+repeatBtn.addEventListener('click', () => {
+  if (animating) return;
+  const needed = Object.values(lastBets).reduce((s,v)=>s+v,0);
+  if (needed > balance) { toast('Not enough balance for last bets!'); return; }
+  // Clear then apply
+  Object.keys(bets).forEach(k => { bets[k] = 0; updateCellBadges(k); });
+  bets = {}; betStack = [];
+  Object.entries(lastBets).forEach(([k,v]) => {
+    bets[k] = v;
+    updateCellBadges(k);
+    betStack.push({ key:k, amount:v });
+  });
+  refreshTotalDisplay();
+});
+
+doubleBtn.addEventListener('click', () => {
+  if (animating) return;
+  const doubled = {};
+  for (const [k,v] of Object.entries(bets)) doubled[k] = v * 2;
+  const newTotal = Object.values(doubled).reduce((s,v)=>s+v,0);
+  if (newTotal > balance) { toast('Not enough balance to double!'); return; }
+  bets = doubled;
+  Object.keys(bets).forEach(k => updateCellBadges(k));
+  refreshTotalDisplay();
+});
+
+// ── Spin ───────────────────────────────────────────────────
+spinBtn.addEventListener('click', () => {
+  if (animating) return;
+  const tb = totalBet();
+  if (tb === 0) { toast('Place a bet first!'); return; }
+  if (tb > balance) { toast('Not enough balance!'); return; }
+
+  animating = true;
+  setUI(false);
+  balance -= tb;
+  refreshBalance();
+
+  const idx = Math.floor(Math.random() * ORDER.length);
+  spin(idx, ORDER[idx], tb);
+});
+
+// ── Animation ──────────────────────────────────────────────
+function spin(chosenIdx, winNum, betAmount) {
+  // Reset visuals
+  resultSVG.style.opacity = 0;
+  resultSVG.textContent = '';
+  centerDisk.setAttribute('fill', '#2e1500');
+  pocketPaths.forEach(p => p.removeAttribute('filter'));
+
+  /* ── WHEEL: clockwise ──────────────────────────────
+     Wheel rotates CW (angle increases).
+     wheelFinalAngle = wheelAngle + extraSpins + some random fraction.
+     The pocket's absolute angle at rest = wheelFinalAngle + pocketLocalAngle
+  */
+  const extraWheelSpins = 4 + Math.floor(Math.random() * 4);
+  const wheelFinalAngle  = wheelAngle + extraWheelSpins * 360 + Math.random() * 360;
+
+  /* ── BALL: counter-clockwise ───────────────────────
+     Ball spins CCW (angle decreases in our coord system).
+     It must land at the pocket's absolute angle when both stop.
+
+     Pocket local angle on wheel:  pocketLocal = chosenIdx * SLICE + SLICE/2
+     Pocket absolute angle at end: pocketAbs   = wheelFinalAngle + pocketLocal
+
+     Ball angle interpolates ballStart → ballFinal where ballFinal < ballStart
+     (because CCW = decreasing angle).
+
+     Steps:
+       1. Normalise pocketAbs to [0,360)
+       2. Compute CCW delta: how far CCW from ballStart to reach pocketAbsNorm
+       3. ballFinal = ballStart − ccwDelta − extraCCWRevolutions × 360
+  */
+  const pocketLocal  = chosenIdx * SLICE + SLICE / 2;
+  const pocketAbs    = wheelFinalAngle + pocketLocal;
+  const pocketNorm   = ((pocketAbs % 360) + 360) % 360;
+
+  const ballStart = Math.random() * 360;
+  let ccwDelta    = ((ballStart - pocketNorm) % 360 + 360) % 360;
+  if (ccwDelta < 10) ccwDelta += 360; // guarantee visible travel
+
+  // Ball spins more revolutions than wheel (it's faster, lighter)
+  const ballExtraRevs  = 6 + Math.floor(Math.random() * 4);
+  const ballFinalAngle = ballStart - ccwDelta - ballExtraRevs * 360;
+
+  const totalMs  = 5500 + Math.random() * 1800;
+  const startTs  = performance.now();
+
+  /* Ball radius over time:
+     0 → 72% : outer track (248), gentle inward drift
+     72% → 100% : drop into pocket with small bounce
+  */
+  function ballRadius(t) {
+    if (t < 0.72) {
+      return TRACK_R - t * 5;            // barely drifts inward
+    } else {
+      const s = (t - 0.72) / 0.28;      // 0→1 during drop phase
+      const drop = easeOutQuart(s);
+      const bounce = Math.sin(s * Math.PI * 3.5) * (1 - s) * 14;
+      const from = TRACK_R - 0.72 * 5;  // ~244.4
+      return from - drop * (from - POCKET_R) + bounce;
+    }
+  }
+
+  function frame(ts) {
+    const t = clamp((ts - startTs) / totalMs, 0, 1);
+
+    // Wheel: easeOutCubic CW
+    const wEase = easeOutCubic(t);
+    const nowWheel = wheelAngle + (wheelFinalAngle - wheelAngle) * wEase;
+    wheelG.setAttribute('transform', `rotate(${nowWheel})`);
+
+    // Ball: easeOutQuart CCW (decelerates slightly faster than wheel)
+    const bEase = easeOutQuart(t);
+    const nowBallAngle = ballStart + (ballFinalAngle - ballStart) * bEase;
+    const nowRadius = ballRadius(t);
+    const pos = polar(nowRadius, nowBallAngle);
+    ballEl.setAttribute('cx', pos.x.toFixed(2));
+    ballEl.setAttribute('cy', pos.y.toFixed(2));
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      wheelAngle = ((wheelFinalAngle % 360) + 360) % 360;
+      onSpinDone(chosenIdx, winNum, betAmount);
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function onSpinDone(chosenIdx, winNum, betTotal) {
+  // Light up wheel center with result color
+  const color = winNum === 0 ? '#16a34a' : REDS.has(winNum) ? '#c41e3a' : '#111';
+  centerDisk.setAttribute('fill', color);
+  resultSVG.textContent = String(winNum);
+  // resultSVG.style.opacity = 1;  // hidden — big overlay is enough
+  pocketPaths[chosenIdx].setAttribute('filter','drop-shadow(0 0 7px rgba(255,220,0,0.95))');
+
+  // Payout
+  const payout = computePayout(winNum);
+  balance += payout;
+  const net = payout - betTotal;
+
+  // History + stats
+  history.unshift(winNum);
+  if (history.length > 20) history.pop();
+  sessionStats.spins++;
+  if (winNum === 0) sessionStats.zero++;
+  else if (REDS.has(winNum)) sessionStats.red++;
+  else sessionStats.black++;
+
+  // Save for Repeat
+  lastBets = { ...bets };
+  repeatBtn.disabled = false;
+
+  // UI updates
+  refreshBalance(net > 0 ? 'win' : net < 0 ? 'lose' : null);
+  renderHistory();
+  renderStats();
+  showWinningCells(winNum);
+  showOverlay(winNum, net);
+
+  setTimeout(() => {
+    hideOverlay();
+    clearBetsAfterSpin();
+    animating = false;
+    setUI(true);
+  }, 3200);
+}
+
+// ── Payout logic ───────────────────────────────────────────
+function wins(key, num) {
+  const n = num;
+  if (key === String(n))                                    return true;
+  if (key === 'red'   && REDS.has(n))                       return true;
+  if (key === 'black' && !REDS.has(n) && n !== 0)           return true;
+  if (key === 'even'  && n !== 0 && n % 2 === 0)            return true;
+  if (key === 'odd'   && n % 2 === 1)                       return true;
+  if (key === '1to18' && n >= 1  && n <= 18)                return true;
+  if (key === '19to36'&& n >= 19 && n <= 36)                return true;
+  if (key === '1to12' && n >= 1  && n <= 12)                return true;
+  if (key === '13to24'&& n >= 13 && n <= 24)                return true;
+  if (key === '25to36'&& n >= 25 && n <= 36)                return true;
+  if (key === 'col1'  && n % 3 === 1 && n !== 0)           return true;
+  if (key === 'col2'  && n % 3 === 2 && n !== 0)           return true;
+  if (key === 'col3'  && n % 3 === 0 && n !== 0)           return true;
+  return false;
+}
+
+function payoutRatio(key) {
+  // Returns payout multiplier (e.g. 35 means win 35× stake)
+  if (/^\d+$/.test(key))           return 35;  // straight up
+  if (['red','black','even','odd','1to18','19to36'].includes(key)) return 1;
+  if (['1to12','13to24','25to36','col1','col2','col3'].includes(key)) return 2;
+  return 0;
+}
+
+function computePayout(winNum) {
+  let total = 0;
+  for (const [key, amount] of Object.entries(bets)) {
+    if (wins(key, winNum)) {
+      total += amount * (payoutRatio(key) + 1); // stake back + winnings
+    }
+  }
+  return total;
+}
+
+// ── UI helpers ─────────────────────────────────────────────
+function refreshBalance(flash) {
+  balanceAmt.textContent = fmt(balance);
+  if (flash) {
+    balanceAmt.classList.add('flash-' + flash);
+    setTimeout(() => balanceAmt.classList.remove('flash-' + flash), 1200);
+  }
+}
+
+function setUI(enabled) {
+  spinBtn.disabled = !enabled;
+  clearBtn.disabled = !enabled;
+  undoBtn.disabled = !enabled;
+  if (enabled) refreshTotalDisplay(); // re-evaluate double button
+}
+
+function clearBetsAfterSpin() {
+  Object.keys(bets).forEach(k => { bets[k] = 0; updateCellBadges(k); });
+  bets = {}; betStack = [];
+  refreshTotalDisplay();
+}
+
+function showWinningCells(winNum) {
+  for (const key of Object.keys(bets)) {
+    if (wins(key, winNum)) {
+      tableGrid.querySelectorAll(`[data-bet="${key}"]`).forEach(c => {
+        c.classList.add('win-pulse');
+        setTimeout(() => c.classList.remove('win-pulse'), 2800);
+      });
+    }
+  }
+}
+
+function showOverlay(winNum, net) {
+  const cls = winNum === 0 ? 'zero' : REDS.has(winNum) ? 'red' : 'black';
+  const label = winNum === 0 ? 'Zero · Green' : REDS.has(winNum) ? 'Red' : 'Black';
+  ovNumber.textContent = winNum;
+  ovNumber.className = 'ov-number ' + cls;
+  ovColor.textContent = label;
+  if (net > 0) {
+    ovPayout.textContent = '+' + fmt(net);
+    ovPayout.className = 'ov-payout win';
+  } else if (net < 0) {
+    ovPayout.textContent = '−' + fmt(Math.abs(net));
+    ovPayout.className = 'ov-payout lose';
+  } else {
+    ovPayout.textContent = 'Push';
+    ovPayout.className = 'ov-payout push';
+  }
+  overlay.classList.add('show');
+}
+
+function hideOverlay() { overlay.classList.remove('show'); }
+
+function renderHistory() {
+  historyRow.innerHTML = '';
+  if (history.length === 0) {
+    historyRow.innerHTML = '<span style="color:#444;font-size:12px">No spins yet</span>';
+    return;
+  }
+  history.forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'h-dot ' + (n === 0 ? 'zero' : REDS.has(n) ? 'red' : 'black');
+    d.textContent = n;
+    historyRow.appendChild(d);
+  });
+}
+
+function renderStats() {
+  if (sessionStats.spins === 0) return;
+  statsPanel.style.display = 'block';
+  const { spins, red, black, zero } = sessionStats;
+  statsGrid.innerHTML = `
+    <div class="stat-item">
+      <div class="stat-num">${spins}</div>
+      <div class="stat-lbl">Spins</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num red-stat">${red}</div>
+      <div class="stat-lbl">Red</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num black-stat">${black}</div>
+      <div class="stat-lbl">Black</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num green-stat">${zero}</div>
+      <div class="stat-lbl">Zero</div>
+    </div>`;
+}
+
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2900);
+}
+
+// ── Init ───────────────────────────────────────────────────
+refreshBalance();
+refreshTotalDisplay();
+// Position ball on outer track
+const initPos = polar(TRACK_R, 0);
+ballEl.setAttribute('cx', initPos.x.toFixed(2));
+ballEl.setAttribute('cy', initPos.y.toFixed(2));
+</script>
+</body>
+</html>

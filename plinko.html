@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pro Plinko - Physics Edition</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f1724;
+            --bg-card: #212731;
+            --bg-input: #0f1724;
+            --accent-green: #00e701;
+            --accent-red: #ff1f44;
+            --accent-blue: #1a8cff;
+            --text-main: #ffffff;
+            --text-dim: #b1bad3;
+            --border: #2f3641;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body, html {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .game-wrapper {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: #1a212e;
+            flex-direction: row;
+        }
+
+        /* ── History Panel ── */
+        .history-panel {
+            width: 148px;
+            min-width: 148px;
+            background: var(--bg-card);
+            border-right: 2px solid var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            padding: 16px 10px;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .history-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .history-list::-webkit-scrollbar { width: 3px; }
+        .history-list::-webkit-scrollbar-track { background: transparent; }
+        .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 5px;
+            background: var(--bg-input);
+            border-left: 3px solid transparent;
+            animation: slideIn 0.18s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .history-multi  { font-size: 13px; font-weight: 800; }
+        .history-amount { font-size: 11px; }
+
+        /* ── Board ── */
+        .board-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            min-width: 0;
+        }
+
+        canvas#plinko-canvas {
+            max-width: 1000px;
+            max-height: 85vh;
+            width: 100%;
+            height: auto;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 340px;
+            background: var(--bg-card);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-left: 2px solid var(--bg-dark);
+            z-index: 10;
+        }
+
+        .balance-display {
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 14px;
+        }
+
+        .balance-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+        }
+
+        .balance-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent-green);
+            transition: color 0.3s;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--bg-input);
+            padding: 4px;
+            border-radius: 30px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            padding: 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .tab-btn.active { background: var(--border); color: white; }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+
+        label { color: var(--text-dim); font-size: 14px; font-weight: 600; }
+
+        .bet-input-wrap {
+            display: flex;
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .bet-input-wrap input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 8px;
+            width: 100%;
+            outline: none;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .bet-input-wrap.locked { opacity: 0.38; pointer-events: none; }
+
+        select {
+            background: var(--bg-input);
+            border: 2px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        select.locked { opacity: 0.38; pointer-events: none; }
+
+        #drop-btn {
+            background: var(--accent-green);
+            color: #000;
+            border: none;
+            padding: 18px;
+            font-weight: 800;
+            margin-top: auto;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            transition: background 0.2s, color 0.2s, filter 0.15s;
+        }
+
+        #drop-btn:hover { filter: brightness(1.12); }
+
+        .menu-btn {
+            position: fixed;
+            top: 20px;
+            left: 168px;
+            padding: 10px 18px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, gold, orange);
+            color: black;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+            box-shadow: 0 0 15px rgba(255,200,0,0.7);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 999;
+            border: none;
+        }
+
+        .menu-btn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,200,0,1); }
+
+        .stats-section {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .stats-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 14px;
+        }
+
+        .stat-item { border-left: 3px solid var(--border); padding-left: 12px; }
+        .stat-val  { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+        .graph-wrap { background: #0f1724; border-radius: 8px; padding: 8px; }
+        #profit-chart { width: 100%; height: 160px; display: block; }
+
+        /* ── Game Over Overlay ── */
+        #game-over-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.84);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-over-overlay.visible { display: flex; }
+
+        .game-over-box {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 18px;
+            padding: 52px 64px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            align-items: center;
+        }
+
+        .game-over-title  { font-size: 52px; font-weight: 800; color: var(--accent-red); letter-spacing: 0.03em; }
+        .game-over-sub    { font-size: 16px; color: var(--text-dim); }
+        .game-over-stats  { font-size: 17px; font-weight: 700; color: var(--text-main); }
+
+        .game-over-buttons { display: flex; gap: 16px; margin-top: 6px; }
+
+        .go-btn {
+            padding: 14px 32px;
+            border-radius: 6px;
+            border: none;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: filter 0.15s;
+        }
+
+        .go-btn:hover   { filter: brightness(1.12); }
+        .go-btn-menu    { background: var(--border); color: white; }
+        .go-btn-retry   { background: var(--accent-green); color: #000; }
+
+        /* ── Chart Expand ── */
+        .graph-wrap {
+            position: relative;
+            cursor: zoom-in;
+        }
+
+        .game-wrapper.blurred {
+            filter: blur(5px);
+            pointer-events: none;
+            transition: filter 0.2s;
+        }
+        .graph-wrap:hover::after {
+            content: '⛶  expand';
+            position: absolute;
+            top: 8px; right: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.45);
+            pointer-events: none;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Chart Overlay ── */
+        #chart-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+        #chart-overlay.visible { display: flex; }
+
+        #chart-overlay-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        #chart-overlay-box {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 32px 24px;
+            width: 90vw;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #chart-overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chart-overlay-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        #chart-overlay-close {
+            background: var(--border);
+            border: none;
+            color: white;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+            transition: background 0.15s;
+        }
+        #chart-overlay-close:hover { background: #555; }
+
+        #chart-overlay-tooltip {
+            height: 22px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-align: center;
+            transition: color 0.1s;
+        }
+
+        #expanded-chart {
+            width: 100%;
+            height: 55vh;
+            display: block;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Chart Overlay -->
+<div id="chart-overlay">
+    <div id="chart-overlay-backdrop" onclick="closeChartOverlay()"></div>
+    <div id="chart-overlay-box">
+        <div id="chart-overlay-header">
+            <div id="chart-overlay-title">Profit History</div>
+            <button id="chart-overlay-close" onclick="closeChartOverlay()">✕</button>
+        </div>
+        <div id="chart-overlay-tooltip">Hover over the chart to inspect values</div>
+        <canvas id="expanded-chart"></canvas>
+    </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div id="game-over-overlay">
+    <div class="game-over-box">
+        <div class="game-over-title">GAME OVER</div>
+        <div class="game-over-sub">You've run out of funds!</div>
+        <div class="game-over-stats" id="go-stats"></div>
+        <div class="game-over-buttons">
+            <button class="go-btn go-btn-menu"  onclick="window.location.href='menu.html'">Back to Menu</button>
+            <button class="go-btn go-btn-retry" onclick="retryGame()">Try Again</button>
+        </div>
+    </div>
+</div>
+
+<div class="game-wrapper">
+
+    <!-- History Panel (left) -->
+    <div class="history-panel">
+        <div class="history-title">History</div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container">
+        <a class="menu-btn" href="menu.html">menu</a>
+        <canvas id="plinko-canvas"></canvas>
+    </div>
+
+    <!-- Sidebar (right) -->
+    <div class="sidebar">
+
+        <div class="balance-display">
+            <div class="balance-label">Balance</div>
+            <div class="balance-value" id="balance-display">$1000.00</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-manual" onclick="setMode('manual')">Manual</button>
+            <button class="tab-btn"        id="tab-auto"   onclick="setMode('auto')">Auto</button>
+        </div>
+
+        <div class="input-group">
+            <label>Bet Amount</label>
+            <div class="bet-input-wrap" id="bet-wrap">
+                <input type="number" id="bet-amount" value="10.00" min="0.01" step="0.01">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Rows</label>
+            <select id="rows-select" onchange="initBoard()">
+                <option value="8">8</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16" selected>16</option>
+            </select>
+        </div>
+
+        <div id="auto-settings" style="display:none">
+            <div class="input-group">
+                <label>Number of Bets (0 = ∞)</label>
+                <div class="bet-input-wrap"><input type="number" id="auto-count" value="0"></div>
+            </div>
+        </div>
+
+        <button id="drop-btn" onclick="handleMainAction()">Single Drop</button>
+
+        <div class="stats-section">
+            <div class="stats-section-title">Live Stats</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div style="font-size:11px;color:var(--text-dim);">PROFIT</div>
+                    <div class="stat-val" id="stat-profit" style="color:var(--accent-green)">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <div style="font-size:11px;color:var(--text-dim);">W / L</div>
+                    <div class="stat-val">
+                        <span id="stat-wins"   style="color:var(--accent-green)">0</span> /
+                        <span id="stat-losses" style="color:var(--accent-red)">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="graph-wrap" onclick="openChartOverlay()"><canvas id="profit-chart"></canvas></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    /* ─── Canvas refs ─── */
+    const canvas         = document.getElementById('plinko-canvas');
+    const ctx            = canvas.getContext('2d');
+    const chartCanvas    = document.getElementById('profit-chart');
+    const chartCtx       = chartCanvas.getContext('2d');
+    const expandedCanvas = document.getElementById('expanded-chart');
+    const expandedCtx    = expandedCanvas.getContext('2d');
+
+    /* ─── Physics constants ─── */
+    const GRAVITY     = 0.35;
+    const BOUNCE      = 0.5;
+    const BALL_RADIUS = 7;
+    const PEG_RADIUS  = 4;
+    const WALL_BOUNCE = 0.8;
+
+    /* ─── Game state ─── */
+    const STARTING_BALANCE = 1000;
+    const MAX_HISTORY      = 22;
+
+    let rows          = 16;
+    let balance       = STARTING_BALANCE;
+    let profit        = 0;
+    let wins          = 0;
+    let losses        = 0;
+    let profitHistory = [0];
+    let activeBalls   = [];
+    let pegs          = [];
+    let buckets       = [];
+    let isAuto        = false;
+    let autoInterval  = null;
+    let dropHistory   = [];
+    let gameOver      = false;
+
+    /* ─── Multiplier tables ─── */
+    const MULTIPLIERS = {
+        8:  [5.0, 2.0, 0.5, 0.3, 0.1, 0.3, 0.5, 2.0, 5.0],
+        12: [10, 3.0, 1.5, 0.8, 0.5, 0.3, 0.1, 0.3, 0.5, 0.8, 1.5, 3.0, 10],
+        14: [15, 4.0, 2.0, 1.5, 0.8, 0.5, 0.1, 0.5, 0.8, 1.5, 2.0, 4.0, 15],
+        16: [12, 5, 2, 1.5, 1.2, 0.8, 0.5, 0.3, 0.1, 0.3, 0.5, 0.8, 1.2, 1.5, 2, 5, 12],
+    };
+
+    /* ─── Bucket colours ─── */
+    function getBucketColor(val) {
+        if (val <= 0.1) return "#3b3b3b";
+        if (val < 0.3)  return "#6a3838";
+        if (val < 0.5)  return "#5e5e5e";
+        if (val < 1)    return "#7a8494";
+        if (val < 1.2)  return "#4e8f4e";
+        if (val < 1.5)  return "#3aaa3a";
+        if (val < 2)    return "#a89830";
+        if (val < 9)    return "#c07a18";
+        return "#b02a20";
+    }
+
+    /* ─── Balance display ─── */
+    function updateBalanceDisplay() {
+        const el = document.getElementById('balance-display');
+        el.textContent = '$' + balance.toFixed(2);
+        el.style.color = balance >= 200 ? 'var(--accent-green)'
+                       : balance > 0    ? '#f5a623'
+                       :                  'var(--accent-red)';
+    }
+
+    /* ─── Lock inputs while balls are in flight ─── */
+    function updateInputLock() {
+        const busy = activeBalls.length > 0;
+        document.getElementById('bet-wrap').classList.toggle('locked', busy);
+        document.getElementById('bet-amount').disabled = busy;
+        document.getElementById('rows-select').classList.toggle('locked', busy);
+        document.getElementById('rows-select').disabled = busy;
+    }
+
+    /* ─── Drop button label / colour ─── */
+    function updateMainButtonLabel() {
+        const btn = document.getElementById('drop-btn');
+        if (isAuto) {
+            if (autoInterval) {
+                btn.textContent      = 'Stop Automated Drop';
+                btn.style.background = 'var(--accent-red)';
+                btn.style.color      = '#fff';
+            } else {
+                btn.textContent      = 'Start Automated Drop';
+                btn.style.background = 'var(--accent-blue)';
+                btn.style.color      = '#fff';
+            }
+        } else {
+            btn.textContent      = 'Single Drop';
+            btn.style.background = 'var(--accent-green)';
+            btn.style.color      = '#000';
+        }
+    }
+
+    /* ─── History panel ─── */
+    function addHistoryItem(multi, net) {
+        dropHistory.unshift({ multi, net });
+        if (dropHistory.length > MAX_HISTORY) dropHistory.pop();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        dropHistory.forEach((item, idx) => {
+            const winColor = item.multi >= 9 ? '#e05c3a'
+                           : item.multi >= 2 ? '#f5a623'
+                           : item.multi >= 1 ? '#00e701'
+                           :                   '#ff6070';
+            const netColor = item.net >= 0 ? '#00e701' : '#ff6070';
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.style.borderLeftColor = winColor;
+            if (idx > 0) div.style.animation = 'none';
+            div.innerHTML =
+                `<span class="history-multi"  style="color:${winColor}">${item.multi}x</span>` +
+                `<span class="history-amount" style="color:${netColor}">${item.net >= 0 ? '+' : ''}$${item.net.toFixed(2)}</span>`;
+            list.appendChild(div);
+        });
+    }
+
+    /* ─── Board init ─── */
+    function initBoard() {
+        if (activeBalls.length > 0) return;
+
+        rows = parseInt(document.getElementById('rows-select').value);
+        canvas.width       = 1000;
+        canvas.height      = 800;
+        chartCanvas.width  = 340;
+        chartCanvas.height = 160;
+
+        pegs = [];
+        const spacing   = (canvas.width * 0.8) / (rows + 2);
+        const startY    = 80;
+        const rowHeight = (canvas.height - 250) / rows;
+
+        for (let r = 0; r <= rows; r++) {
+            const n      = r + 3;
+            const startX = (canvas.width - (n - 1) * spacing) / 2;
+            for (let c = 0; c < n; c++) {
+                pegs.push({ x: startX + c * spacing, y: startY + r * rowHeight });
+            }
+        }
+
+        buckets = [];
+        const m       = MULTIPLIERS[rows];
+        const bw      = canvas.width / (rows + 1);
+        const bucketY = startY + rows * rowHeight + 60;
+
+        m.forEach((val, i) => {
+            buckets.push({ x: i * bw, y: bucketY, w: bw, val });
+        });
+
+        draw();
+        drawChart();
+    }
+
+    /* ─── Drop a ball ─── */
+    function dropBall() {
+        if (gameOver) return;
+        const bet = parseFloat(document.getElementById('bet-amount').value);
+        if (isNaN(bet) || bet <= 0) return;
+
+        if (balance < bet) {
+            if (autoInterval) stopAuto();
+            return;
+        }
+
+        balance -= bet;
+        updateBalanceDisplay();
+        updateInputLock();
+
+        activeBalls.push({
+            x:   canvas.width / 2 + (Math.random() - 0.5) * 4,
+            y:   20,
+            vx:  (Math.random() - 0.5) * 2,
+            vy:  0,
+            bet: bet
+        });
+    }
+
+    /* ─── Physics tick ─── */
+    function updatePhysics() {
+        const leftWall  = BALL_RADIUS + 2;
+        const rightWall = canvas.width - BALL_RADIUS - 2;
+        const prevCount = activeBalls.length;
+
+        for (let i = activeBalls.length - 1; i >= 0; i--) {
+            const b = activeBalls[i];
+
+            b.vy += GRAVITY;
+            b.x  += b.vx;
+            b.y  += b.vy;
+
+            if (b.x < leftWall) {
+                b.x  = leftWall;
+                b.vx = Math.abs(b.vx) * WALL_BOUNCE;
+            } else if (b.x > rightWall) {
+                b.x  = rightWall;
+                b.vx = -Math.abs(b.vx) * WALL_BOUNCE;
+            }
+
+            pegs.forEach(p => {
+                const dx   = b.x - p.x;
+                const dy   = b.y - p.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < BALL_RADIUS + PEG_RADIUS) {
+                    const angle = Math.atan2(dy, dx);
+                    b.x = p.x + Math.cos(angle) * (BALL_RADIUS + PEG_RADIUS);
+                    b.y = p.y + Math.sin(angle) * (BALL_RADIUS + PEG_RADIUS);
+                    const nx  = dx / dist, ny = dy / dist;
+                    const dot = b.vx * nx + b.vy * ny;
+                    b.vx = (b.vx - 2 * dot * nx) * BOUNCE + (Math.random() - 0.5) * 0.8;
+                    b.vy = (b.vy - 2 * dot * ny) * BOUNCE;
+                }
+            });
+
+            if (b.y > buckets[0].y) {
+                const hit = buckets.find(bk => b.x >= bk.x && b.x <= bk.x + bk.w);
+                if (hit) {
+                    processWin(hit.val, b.bet);
+                    activeBalls.splice(i, 1);
+                } else if (b.y > canvas.height) {
+                    activeBalls.splice(i, 1);
+                }
+            }
+        }
+
+        if (prevCount !== activeBalls.length) {
+            updateInputLock();
+            if (activeBalls.length === 0 && !gameOver) {
+                const bet = parseFloat(document.getElementById('bet-amount').value) || 10;
+                if (balance <= 0) {
+                    if (autoInterval) stopAuto();
+                    triggerGameOver();
+                } else if (balance < bet && autoInterval) {
+                    stopAuto(); // Can't afford next auto-bet; player can lower bet manually
+                }
+            }
+        }
+    }
+
+    /* ─── Draw frame ─── */
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const wallTop    = 60;
+        const wallBottom = buckets.length ? buckets[0].y + 40 : canvas.height - 40;
+        const rightWallX = buckets.length
+            ? Math.round(buckets[buckets.length - 1].x + buckets[buckets.length - 1].w) - 8
+            : canvas.width - 8;
+
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fillRect(0,          wallTop, 8, wallBottom - wallTop);
+        ctx.fillRect(rightWallX, wallTop, 8, wallBottom - wallTop);
+
+        ctx.fillStyle = "#ffffff";
+        pegs.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        buckets.forEach(bk => {
+            ctx.fillStyle = getBucketColor(bk.val);
+            ctx.beginPath();
+            ctx.roundRect(bk.x, bk.y, bk.w, 40, 6);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.font = "bold 13px Inter";
+            ctx.textAlign = "center";
+            ctx.fillText(bk.val + "x", bk.x + bk.w / 2, bk.y + 25);
+        });
+
+        activeBalls.forEach(b => {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle   = "#ff1f44";
+            ctx.shadowBlur  = 10;
+            ctx.shadowColor = "#ff1f44";
+            ctx.fill();
+            ctx.shadowBlur  = 0;
+        });
+    }
+
+    /* ─── Game loop ─── */
+    function gameLoop() {
+        updatePhysics();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    /* ─── Process a ball landing ─── */
+    function processWin(multi, bet) {
+        const winnings = bet * multi;
+        const net      = winnings - bet;
+
+        balance += winnings;
+        profit  += net;
+
+        if (multi >= 1) wins++;
+        else            losses++;
+
+        profitHistory.push(profit);
+        addHistoryItem(multi, net);
+        updateBalanceDisplay();
+
+        const profitEl = document.getElementById('stat-profit');
+        profitEl.textContent = (profit >= 0 ? '+$' : '-$') + Math.abs(profit).toFixed(2);
+        profitEl.style.color = profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        document.getElementById('stat-wins').textContent   = wins;
+        document.getElementById('stat-losses').textContent = losses;
+
+        drawChart();
+        if (chartOverlayOpen) drawExpandedChart(expandedHoverX);
+    }
+    function triggerGameOver() {
+        gameOver = true;
+        document.getElementById('go-stats').textContent =
+            `Drops: ${wins + losses}  ·  Final profit: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`;
+        document.getElementById('game-over-overlay').classList.add('visible');
+    }
+
+    function retryGame() {
+        balance       = STARTING_BALANCE;
+        profit        = 0;
+        wins          = 0;
+        losses        = 0;
+        profitHistory = [0];
+        activeBalls   = [];
+        dropHistory   = [];
+        gameOver      = false;
+
+        renderHistory();
+        updateBalanceDisplay();
+        updateInputLock();
+        updateMainButtonLabel();
+
+        const profitEl = document.getElementById('stat-profit');
+        profitEl.textContent = '$0.00';
+        profitEl.style.color = 'var(--accent-green)';
+        document.getElementById('stat-wins').textContent   = '0';
+        document.getElementById('stat-losses').textContent = '0';
+        document.getElementById('game-over-overlay').classList.remove('visible');
+
+        drawChart();
+    }
+
+    /* ─── Profit chart ─── */
+    function drawChart() {
+        chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        if (profitHistory.length < 2) return;
+
+        const w      = chartCanvas.width;
+        const h      = chartCanvas.height;
+        const zeroY  = h / 2;
+        const maxAbs = Math.max(...profitHistory.map(v => Math.abs(v)), 20);
+        const scale  = (h / 2 - 12) / maxAbs;
+
+        chartCtx.strokeStyle = "rgba(255,255,255,0.16)";
+        chartCtx.lineWidth   = 1.5;
+        chartCtx.beginPath(); chartCtx.moveTo(0, zeroY); chartCtx.lineTo(w, zeroY); chartCtx.stroke();
+
+        chartCtx.lineWidth = 2.5;
+        chartCtx.lineCap   = "round";
+        chartCtx.lineJoin  = "round";
+
+        function seg(x1, y1, v1, x2, y2, v2) {
+            if ((v1 >= 0) === (v2 >= 0)) {
+                chartCtx.strokeStyle = v2 >= 0 ? "#00e701" : "#ff1f44";
+                chartCtx.beginPath(); chartCtx.moveTo(x1, y1); chartCtx.lineTo(x2, y2); chartCtx.stroke();
+                return;
+            }
+            const t  = Math.abs(v1) / (Math.abs(v1) + Math.abs(v2));
+            const xm = x1 + (x2 - x1) * t;
+            chartCtx.strokeStyle = v1 >= 0 ? "#00e701" : "#ff1f44";
+            chartCtx.beginPath(); chartCtx.moveTo(x1, y1); chartCtx.lineTo(xm, zeroY); chartCtx.stroke();
+            chartCtx.strokeStyle = v2 >= 0 ? "#00e701" : "#ff1f44";
+            chartCtx.beginPath(); chartCtx.moveTo(xm, zeroY); chartCtx.lineTo(x2, y2); chartCtx.stroke();
+        }
+
+        for (let i = 0; i < profitHistory.length - 1; i++) {
+            const v1 = profitHistory[i], v2 = profitHistory[i + 1];
+            const x1 = (i / (profitHistory.length - 1)) * w;
+            const x2 = ((i + 1) / (profitHistory.length - 1)) * w;
+            seg(x1, zeroY - v1 * scale, v1, x2, zeroY - v2 * scale, v2);
+        }
+    }
+
+    /* ─── Actions ─── */
+    function handleMainAction() {
+        if (gameOver) return;
+        if (!isAuto) dropBall();
+        else if (autoInterval) stopAuto();
+        else startAuto();
+    }
+
+    function startAuto() {
+        autoInterval = setInterval(dropBall, 400);
+        updateMainButtonLabel();
+    }
+
+    function stopAuto() {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        updateMainButtonLabel();
+    }
+
+    function setMode(m) {
+        isAuto = m === 'auto';
+        document.getElementById('tab-manual').classList.toggle('active', !isAuto);
+        document.getElementById('tab-auto').classList.toggle('active',   isAuto);
+        document.getElementById('auto-settings').style.display = isAuto ? 'block' : 'none';
+        if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+        updateMainButtonLabel();
+    }
+
+    /* ─── Chart Overlay ─── */
+    let chartOverlayOpen = false;
+    let expandedHoverX   = null;
+
+    function openChartOverlay() {
+        chartOverlayOpen = true;
+        document.getElementById('chart-overlay').classList.add('visible');
+        document.querySelector('.game-wrapper').classList.add('blurred');
+        // Size the canvas to its rendered size
+        requestAnimationFrame(() => {
+            const rect = expandedCanvas.getBoundingClientRect();
+            expandedCanvas.width  = Math.round(rect.width)  || 900;
+            expandedCanvas.height = Math.round(rect.height) || 420;
+            drawExpandedChart(null);
+        });
+    }
+
+    function closeChartOverlay() {
+        chartOverlayOpen = false;
+        document.getElementById('chart-overlay').classList.remove('visible');
+        document.querySelector('.game-wrapper').classList.remove('blurred');
+        expandedHoverX = null;
+        document.getElementById('chart-overlay-tooltip').textContent = 'Hover over the chart to inspect values';
+        document.getElementById('chart-overlay-tooltip').style.color = '';
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChartOverlay(); });
+
+    function drawExpandedChart(hoverX) {
+        const w = expandedCanvas.width;
+        const h = expandedCanvas.height;
+        expandedCtx.clearRect(0, 0, w, h);
+
+        // Background fill
+        expandedCtx.fillStyle = "#0b1120";
+        expandedCtx.fillRect(0, 0, w, h);
+
+        if (profitHistory.length < 2) {
+            expandedCtx.fillStyle = "rgba(255,255,255,0.25)";
+            expandedCtx.font = "bold 15px Inter";
+            expandedCtx.textAlign = "center";
+            expandedCtx.fillText("No data yet — start dropping!", w / 2, h / 2);
+            return;
+        }
+
+        const padL = 68, padR = 24, padT = 24, padB = 36;
+        const cw     = w - padL - padR;
+        const ch     = h - padT - padB;
+        const maxAbs = Math.max(...profitHistory.map(v => Math.abs(v)), 20);
+        const scale  = (ch / 2 - 10) / maxAbs;
+        const zeroY  = padT + ch / 2;
+
+        // Horizontal grid lines + Y-axis labels
+        const steps = 6;
+        for (let i = 0; i <= steps; i++) {
+            const frac = i / steps;
+            const y    = padT + frac * ch;
+            const val  = maxAbs - frac * 2 * maxAbs;
+
+            expandedCtx.strokeStyle = "rgba(255,255,255,0.07)";
+            expandedCtx.lineWidth   = 1;
+            expandedCtx.beginPath();
+            expandedCtx.moveTo(padL, y);
+            expandedCtx.lineTo(w - padR, y);
+            expandedCtx.stroke();
+
+            expandedCtx.fillStyle  = "rgba(177,186,211,0.55)";
+            expandedCtx.font       = "11px Inter";
+            expandedCtx.textAlign  = "right";
+            expandedCtx.fillText((val >= 0 ? '+' : '') + '$' + Math.round(val), padL - 8, y + 4);
+        }
+
+        // Zero line
+        expandedCtx.strokeStyle = "rgba(255,255,255,0.22)";
+        expandedCtx.lineWidth   = 1.5;
+        expandedCtx.beginPath();
+        expandedCtx.moveTo(padL, zeroY);
+        expandedCtx.lineTo(w - padR, zeroY);
+        expandedCtx.stroke();
+
+        // X-axis tick labels (drop index)
+        const tickCount = Math.min(10, profitHistory.length - 1);
+        for (let t = 0; t <= tickCount; t++) {
+            const idx = Math.round((t / tickCount) * (profitHistory.length - 1));
+            const x   = padL + (idx / (profitHistory.length - 1)) * cw;
+            expandedCtx.fillStyle = "rgba(177,186,211,0.45)";
+            expandedCtx.font      = "10px Inter";
+            expandedCtx.textAlign = "center";
+            expandedCtx.fillText('#' + idx, x, h - padB + 18);
+        }
+
+        // Profit line
+        expandedCtx.lineWidth = 2.5;
+        expandedCtx.lineCap   = "round";
+        expandedCtx.lineJoin  = "round";
+
+        function ptX(i) { return padL + (i / (profitHistory.length - 1)) * cw; }
+        function ptY(i) { return zeroY - profitHistory[i] * scale; }
+
+        function seg(x1, y1, v1, x2, y2, v2) {
+            if ((v1 >= 0) === (v2 >= 0)) {
+                expandedCtx.strokeStyle = v2 >= 0 ? "#00e701" : "#ff1f44";
+                expandedCtx.beginPath(); expandedCtx.moveTo(x1, y1); expandedCtx.lineTo(x2, y2); expandedCtx.stroke();
+                return;
+            }
+            const t  = Math.abs(v1) / (Math.abs(v1) + Math.abs(v2));
+            const xm = x1 + (x2 - x1) * t;
+            expandedCtx.strokeStyle = v1 >= 0 ? "#00e701" : "#ff1f44";
+            expandedCtx.beginPath(); expandedCtx.moveTo(x1, y1); expandedCtx.lineTo(xm, zeroY); expandedCtx.stroke();
+            expandedCtx.strokeStyle = v2 >= 0 ? "#00e701" : "#ff1f44";
+            expandedCtx.beginPath(); expandedCtx.moveTo(xm, zeroY); expandedCtx.lineTo(x2, y2); expandedCtx.stroke();
+        }
+
+        for (let i = 0; i < profitHistory.length - 1; i++) {
+            seg(ptX(i), ptY(i), profitHistory[i], ptX(i + 1), ptY(i + 1), profitHistory[i + 1]);
+        }
+
+        // Hover crosshair
+        if (hoverX != null && profitHistory.length >= 2) {
+            const cx    = Math.max(padL, Math.min(w - padR, hoverX));
+            const ratio = (cx - padL) / cw;
+            const idx   = Math.max(0, Math.min(profitHistory.length - 1, Math.round(ratio * (profitHistory.length - 1))));
+            const val   = profitHistory[idx];
+            const dotY  = zeroY - val * scale;
+            const col   = val >= 0 ? "#00e701" : "#ff1f44";
+
+            // Dashed vertical line
+            expandedCtx.strokeStyle = "rgba(255,255,255,0.35)";
+            expandedCtx.lineWidth   = 1;
+            expandedCtx.setLineDash([5, 5]);
+            expandedCtx.beginPath();
+            expandedCtx.moveTo(cx, padT);
+            expandedCtx.lineTo(cx, h - padB);
+            expandedCtx.stroke();
+
+            // Solid horizontal line
+            expandedCtx.strokeStyle = val >= 0 ? "rgba(0,231,1,0.45)" : "rgba(255,31,68,0.45)";
+            expandedCtx.beginPath();
+            expandedCtx.moveTo(padL, dotY);
+            expandedCtx.lineTo(w - padR, dotY);
+            expandedCtx.stroke();
+            expandedCtx.setLineDash([]);
+
+            // Y-axis label for hovered value
+            expandedCtx.fillStyle = col;
+            expandedCtx.font      = "bold 11px Inter";
+            expandedCtx.textAlign = "right";
+            expandedCtx.fillText((val >= 0 ? '+' : '') + '$' + val.toFixed(2), padL - 5, dotY + 4);
+
+            // Dot on line
+            expandedCtx.beginPath();
+            expandedCtx.arc(cx, dotY, 6, 0, Math.PI * 2);
+            expandedCtx.fillStyle   = col;
+            expandedCtx.shadowBlur  = 10;
+            expandedCtx.shadowColor = col;
+            expandedCtx.fill();
+            expandedCtx.shadowBlur  = 0;
+
+            // Tooltip text above canvas
+            const tooltip = document.getElementById('chart-overlay-tooltip');
+            tooltip.textContent = `Drop #${idx}  ·  Profit: ${val >= 0 ? '+' : ''}$${val.toFixed(2)}`;
+            tooltip.style.color = col;
+        }
+    }
+
+    // Mouse events on the expanded chart
+    expandedCanvas.addEventListener('mousemove', function(e) {
+        if (!chartOverlayOpen) return;
+        const rect  = expandedCanvas.getBoundingClientRect();
+        const scaleX = expandedCanvas.width / rect.width;
+        expandedHoverX = (e.clientX - rect.left) * scaleX;
+        drawExpandedChart(expandedHoverX);
+    });
+
+    expandedCanvas.addEventListener('mouseleave', function() {
+        expandedHoverX = null;
+        drawExpandedChart(null);
+        document.getElementById('chart-overlay-tooltip').textContent = 'Hover over the chart to inspect values';
+        document.getElementById('chart-overlay-tooltip').style.color = '';
+    });
+
+    /* ─── Boot ─── */
+    initBoard();
+    updateMainButtonLabel();
+    updateBalanceDisplay();
+    gameLoop();
+</script>
+</body>
+</html>
