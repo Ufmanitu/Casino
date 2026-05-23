@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avia Masters – Let It Ride Casino</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Rajdhani',sans-serif;background:#080f18;color:#b8cdd8;display:flex;height:100vh;overflow:hidden;user-select:none}
+
+/* ── PANEL ──────────────────────────────────────────────────────── */
+#panel{
+  width:210px;min-width:210px;
+  background:linear-gradient(180deg,#0d1722 0%,#0a1320 100%);
+  border-right:1px solid #162230;
+  display:flex;flex-direction:column;padding:14px 13px;gap:11px;z-index:10
+}
+.logo{text-align:center;padding-bottom:10px;border-bottom:1px solid #162230}
+.logo-main{
+  font-size:17px;font-weight:700;letter-spacing:3px;
+  color:#7dd4f8;text-shadow:0 0 18px rgba(80,190,255,.6)
+}
+.logo-sub{
+  display:block;font-size:9px;letter-spacing:4px;
+  text-transform:uppercase;color:#2a4a5a;margin-top:3px;font-family:'Share Tech Mono',monospace
+}
+
+.lbl{font-size:9px;color:#2a4a5a;text-transform:uppercase;letter-spacing:2px;margin-bottom:3px;font-family:'Share Tech Mono',monospace}
+
+.bal-box{
+  background:#060d16;border:1px solid #162230;border-radius:5px;
+  padding:8px 10px;display:flex;justify-content:space-between;align-items:center
+}
+.bal-cur{font-size:9px;color:#2a4a5a;font-family:'Share Tech Mono',monospace}
+#bal-val{font-size:16px;font-weight:700;color:#3dc86a;font-family:'Share Tech Mono',monospace}
+
+.bet-wrap{background:#060d16;border:1px solid #162230;border-radius:5px;display:flex;overflow:hidden}
+.bet-wrap input{
+  flex:1;background:transparent;border:none;color:#ccdde8;
+  font-size:14px;padding:8px 9px;outline:none;width:0;font-family:'Share Tech Mono',monospace
+}
+.bet-btns{display:flex;border-left:1px solid #162230}
+.bet-btns button{
+  background:#0e1d2a;border:none;color:#4a7080;padding:0 10px;
+  height:34px;cursor:pointer;font-size:11px;font-weight:700;
+  letter-spacing:.5px;transition:background .15s;font-family:'Rajdhani',sans-serif
+}
+.bet-btns button:hover{background:#152535}
+.bet-btns button:not(:last-child){border-right:1px solid #162230}
+
+#btn-fly{
+  width:100%;padding:11px;border-radius:5px;
+  background:linear-gradient(135deg,#1b7bbf 0%,#0c4f8c 100%);
+  border:1px solid #2898e0;color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;letter-spacing:2px;transition:all .15s;
+  text-transform:uppercase;font-family:'Rajdhani',sans-serif;
+  box-shadow:0 0 16px rgba(20,120,200,.3)
+}
+#btn-fly:hover{background:linear-gradient(135deg,#2a8fd0,#1460a8);box-shadow:0 0 24px rgba(20,120,200,.5)}
+#btn-fly:active{transform:scale(.97)}
+#btn-fly:disabled{background:#0e1d2a;color:#2a4050;border-color:#162230;cursor:default;box-shadow:none}
+
+.stat-box{
+  background:#060d16;border:1px solid #162230;border-radius:5px;
+  padding:7px 10px;text-align:center
+}
+.stat-lbl{font-size:9px;color:#2a4a5a;text-transform:uppercase;letter-spacing:2px;font-family:'Share Tech Mono',monospace}
+.stat-val{font-size:18px;font-weight:700;color:#ccdde8;margin-top:1px;font-family:'Share Tech Mono',monospace}
+
+.stat-row{display:flex;gap:6px}
+.stat-row .stat-box{flex:1}
+
+.diff-row{display:flex;gap:4px}
+.diff-btn{
+  flex:1;padding:6px 2px;border-radius:5px;border:1px solid #162230;
+  background:#0e1d2a;color:#3a6070;font-size:10px;font-weight:700;
+  cursor:pointer;text-align:center;transition:all .15s;letter-spacing:1px;
+  text-transform:uppercase;font-family:'Rajdhani',sans-serif
+}
+.diff-btn:hover{background:#142535}
+.diff-btn.act-e{background:rgba(61,200,106,.12);color:#3dc86a;border-color:#3dc86a44}
+.diff-btn.act-m{background:rgba(230,168,23,.12);color:#e6a817;border-color:#e6a81744}
+.diff-btn.act-h{background:rgba(220,60,60,.12);color:#e05050;border-color:#e0505044}
+
+.hist-row{display:flex;flex-wrap:wrap;gap:4px}
+.hbadge{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;font-family:'Share Tech Mono',monospace}
+.hbadge.w{background:rgba(61,200,106,.12);color:#3dc86a;border:1px solid #3dc86a33}
+.hbadge.l{background:rgba(220,60,60,.12);color:#e05050;border:1px solid #e0505033}
+
+.menu-lnk{
+  display:block;margin-top:auto;text-align:center;padding:8px;
+  border-radius:5px;background:#0e1d2a;border:1px solid #162230;
+  color:#3a6070;font-size:11px;font-weight:700;letter-spacing:1px;
+  cursor:pointer;text-decoration:none;transition:background .15s;
+  text-transform:uppercase;font-family:'Rajdhani',sans-serif
+}
+.menu-lnk:hover{background:#142535}
+
+/* ── CANVAS AREA ─────────────────────────────────────────────────── */
+#game{flex:1;position:relative;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* ── HUD ─────────────────────────────────────────────────────────── */
+#hud{
+  position:absolute;top:12px;left:12px;right:12px;
+  display:none;justify-content:space-between;align-items:flex-start;
+  pointer-events:none;z-index:5
+}
+.hcard{
+  background:rgba(5,10,20,.82);border:1px solid rgba(80,170,255,.15);
+  border-radius:7px;padding:7px 14px;backdrop-filter:blur(5px)
+}
+.hlbl{font-size:9px;color:#2a5060;text-transform:uppercase;letter-spacing:2px;font-family:'Share Tech Mono',monospace}
+#hud-mult{font-size:28px;font-weight:700;color:#7dd4f8;font-family:'Share Tech Mono',monospace;
+  text-shadow:0 0 20px rgba(80,190,255,.55);transition:transform .25s}
+#hud-mult.bump{animation:multpop .32s ease}
+@keyframes multpop{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+#hud-win{font-size:19px;font-weight:700;color:#fff;font-family:'Share Tech Mono',monospace}
+
+/* ── OVERLAY MSG ─────────────────────────────────────────────────── */
+#msg{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;
+  opacity:0;transition:opacity .3s;z-index:10
+}
+#msg.show{opacity:1}
+#msg-main{font-size:48px;font-weight:700;letter-spacing:3px;text-shadow:0 0 35px currentColor;font-family:'Rajdhani',sans-serif}
+#msg-sub{font-size:17px;color:rgba(255,255,255,.65);margin-top:6px;font-family:'Share Tech Mono',monospace}
+
+/* ── START SCREEN ─────────────────────────────────────────────────── */
+#intro{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);pointer-events:none;z-index:8
+}
+#intro h2{
+  font-size:36px;font-weight:700;color:#7dd4f8;letter-spacing:4px;
+  text-shadow:0 0 30px rgba(80,190,255,.6);margin-bottom:12px;
+  text-transform:uppercase;font-family:'Rajdhani',sans-serif
+}
+#intro p{color:rgba(255,255,255,.4);font-size:12px;text-align:center;
+  line-height:1.9;font-family:'Share Tech Mono',monospace}
+
+/* ── DANGER BAR ──────────────────────────────────────────────────── */
+#dbar{
+  position:absolute;bottom:0;left:0;right:0;height:4px;
+  background:transparent;transition:background .3s;z-index:6;pointer-events:none
+}
+#dbar.hot{background:rgba(255,70,20,.65);animation:dpulse .38s infinite alternate}
+@keyframes dpulse{from{opacity:.35}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="logo">
+    <div class="logo-main">✈ AVIA MASTERS</div>
+    <span class="logo-sub">Let It Ride Casino</span>
+  </div>
+
+  <div>
+    <div class="lbl">Balance</div>
+    <div class="bal-box">
+      <span class="bal-cur">EUR</span>
+      <span id="bal-val">1 000.00</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="lbl">Risk Level</div>
+    <div class="diff-row">
+      <button class="diff-btn" id="d-easy"   onclick="setDiff('easy')">LOW</button>
+      <button class="diff-btn act-m" id="d-medium" onclick="setDiff('medium')">MED</button>
+      <button class="diff-btn" id="d-hard"   onclick="setDiff('hard')">HIGH</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="lbl">Bet Amount</div>
+    <div class="bet-wrap">
+      <input type="number" id="bet" value="1.00" min="0.10" step="0.10">
+      <div class="bet-btns">
+        <button onclick="adjBet(.5)">½</button>
+        <button onclick="adjBet(2)">2×</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="btn-fly" onclick="startGame()">✈ PLACE BET &amp; FLY</button>
+
+  <div class="stat-box">
+    <div class="stat-lbl">Multiplier</div>
+    <div class="stat-val" id="s-mult" style="color:#7dd4f8">×1.00</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="stat-lbl">Win</div>
+      <div class="stat-val" id="s-win" style="color:#e6a817">€1.00</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Alt</div>
+      <div class="stat-val" id="s-alt" style="color:#3dc86a">HIGH</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="lbl">History</div>
+    <div class="hist-row" id="hist"></div>
+  </div>
+
+  <a class="menu-lnk" href="menu.html">← Casino Menu</a>
+</div>
+
+<div id="game">
+  <canvas id="sky"></canvas>
+
+  <div id="intro">
+    <h2>✈ Avia Masters</h2>
+    <p>
+      SET YOUR BET · PRESS FLY<br>
+      HIT MULTIPLIER ORBS TO SOAR<br>
+      LAND ON A MOTHERSHIP TO WIN<br>
+      TOUCH THE WATER AND LOSE IT ALL<br><br>
+      <span style="color:rgba(255,255,255,.18)">PURE LUCK · NO CONTROLS ONCE AIRBORNE</span>
+    </p>
+  </div>
+
+  <div id="hud">
+    <div class="hcard">
+      <div class="hlbl">Multiplier</div>
+      <div id="hud-mult">×1.00</div>
+    </div>
+    <div class="hcard">
+      <div class="hlbl">Potential Win</div>
+      <div id="hud-win">€1.00</div>
+    </div>
+  </div>
+
+  <div id="msg"><div id="msg-main"></div><div id="msg-sub"></div></div>
+  <div id="dbar"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  AVIA MASTERS  v3  –  Tick-based hits · Continuous bubble stream
+// ════════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('sky');
+const ctx    = canvas.getContext('2d');
+function resize(){ canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+resize(); window.addEventListener('resize', resize);
+
+// ── CONSTANTS ────────────────────────────────────────────────────
+const GRAV  = 0.052;
+const BSPD  = 5.4;
+const WIN_P = { easy:0.58, medium:0.40, hard:0.22 };
+
+const BTYPES = [
+  { lbl:'×1.5', val:1.5, col:'#8de4ff', glow:'rgba(80,210,255,.55)' },
+  { lbl:'×2',   val:2.0, col:'#ffffff', glow:'rgba(255,255,255,.45)' },
+  { lbl:'×3',   val:3.0, col:'#ffe050', glow:'rgba(255,210,30,.6)'   },
+  { lbl:'×2',   val:2.0, col:'#ffb060', glow:'rgba(255,170,50,.5)'   },
+  { lbl:'×2',   val:2.0, col:'#d060ff', glow:'rgba(200,80,255,.55)'  },
+];
+const RAW_BOOST = [-5.0, -5.4, -5.8, -5.0, -5.2];
+
+// Decoy / ambient bubbles — never hit the plane, pure visual noise
+const DECOY_TYPES = [
+  { lbl:'×5',   col:'#ff9050', glow:'rgba(255,130,50,.5)',  r:22 },
+  { lbl:'×10',  col:'#ff4488', glow:'rgba(255,40,110,.52)', r:24 },
+  { lbl:'×15',  col:'#ff60ff', glow:'rgba(255,70,255,.5)',  r:24 },
+  { lbl:'×25',  col:'#a060ff', glow:'rgba(140,60,255,.55)', r:26 },
+  { lbl:'×50',  col:'#ffcc00', glow:'rgba(255,200,0,.62)',  r:28 },
+  { lbl:'×100', col:'#ff8800', glow:'rgba(255,130,0,.62)',  r:30 },
+  { lbl:'×150', col:'#ff2244', glow:'rgba(255,30,60,.68)',  r:32 },
+];
+
+// ── STATE ────────────────────────────────────────────────────────
+let S = {
+  phase:'idle', tick:0,
+  balance:1000, bet:1, mult:1,
+  py:0, pvy:0, flash:0,
+  woff:0, stars:[],
+  bubbles:[], ships:[], parts:[],
+  preb:[], pres:[],
+  nextDecoySpawn:0,   // ← continuous ambient decoy timer
+};
+let diff = 'medium';
+let floats = [];
+
+const WY = () => canvas.height * 0.80;
+const PX = () => canvas.width  * 0.20;
+
+// ── STARS ────────────────────────────────────────────────────────
+function mkStars(){
+  S.stars = Array.from({length:95},()=>({
+    xr:Math.random(), yr:Math.random()*0.50,
+    r:Math.random()*1.4+0.25, tw:Math.random()*Math.PI*2
+  }));
+}
+mkStars();
+
+// ════════════════════════════════════════════════════════════════
+//  PRE-SIMULATION
+//  The round outcome is fully determined here. Real bubbles carry
+//  a hitT (the game tick at which collision fires), ensuring exact
+//  timing regardless of physics drift.
+// ════════════════════════════════════════════════════════════════
+function buildRound(win){
+  const h=canvas.height, w=canvas.width, wy=WY(), px=PX();
+
+  let sY=h*0.44, sVy=-2.8;
+  const preb=[], pres=[];
+  const nHits  = 4+(Math.random()<0.5?1:0);
+  const space  = 158+Math.random()*55;
+  let   nxtHit = 108+Math.random()*28;
+  let   done   = 0, crashT = 1100;
+
+  for(let t=1; t<=1600; t++){
+    sVy += GRAV;
+    sY  += sVy;
+    if(sY < 28){ sY=28; sVy=Math.abs(sVy)*0.18; }
+
+    if(done < nHits && t >= nxtHit){
+      const headroom = sY - 32;
+      const maxSafe  = headroom>0 ? -Math.sqrt(2*GRAV*headroom)*0.87 : -1.0;
+      const rawB     = RAW_BOOST[done % RAW_BOOST.length];
+      const boost    = Math.max(rawB, maxSafe);
+      const bY       = Math.max(60, Math.min(wy-75, sY));
+      const trav     = (w - px + 45) / BSPD;
+
+      // Real bubble — hitT triggers the collision EXACTLY on this tick
+      preb.push({
+        spawnT: Math.round(t - trav),
+        hitT:   t,                    // ← authoritative collision tick
+        boost, y:bY, r:26,
+        wob:Math.random()*Math.PI*2,
+        coll:false, spawned:false,
+        ...BTYPES[done % BTYPES.length]
+      });
+
+      sVy = boost;
+      done++;
+      nxtHit = t + space + Math.random()*42;
+    }
+
+    if(sY >= wy-6){ crashT=t; break; }
+  }
+
+  // ── Ship scheduling ──────────────────────────────────────────
+  const sw    = 158+Math.random()*42;
+  const sspd  = 1.05+Math.random()*0.52;
+  const startX= w + sw*0.65;
+
+  if(win){
+    const spT = crashT - (startX - px)/sspd;
+    pres.push({ spawnT:Math.round(spT), w:sw, spd:sspd, type:0, win:true, spawned:false });
+  } else {
+    const gap = 26+Math.random()*28;
+    const ctrAtCrash = px + sw*0.54 + gap;
+    const spT = crashT - (startX - ctrAtCrash)/sspd;
+    pres.push({ spawnT:Math.round(spT), w:sw, spd:sspd, type:1, win:false, spawned:false });
+  }
+  for(let i=0;i<2;i++){
+    const eT = 20+i*230+Math.random()*90;
+    if(eT < crashT-220){
+      pres.push({
+        spawnT:Math.round(eT),
+        w:85+Math.random()*60, spd:1.4+Math.random()*1.0,
+        type:Math.floor(Math.random()*3), decor:true, spawned:false
+      });
+    }
+  }
+  return {preb, pres};
+}
+
+// ── Spawn a random ambient decoy bubble ──────────────────────────
+// Decoys live in two strips the plane NEVER occupies:
+//   Top strip    — above the highest point the plane can boost to
+//   Bottom strip — just above the waterline, below where plane glides
+// This keeps the sky busy throughout the whole flight without ever
+// visually crossing the plane's corridor.
+function spawnAmbientDecoy(){
+  const wy = WY();
+  const h  = canvas.height;
+  const dType = DECOY_TYPES[Math.floor(Math.random()*DECOY_TYPES.length)];
+
+  let dY;
+  if(Math.random() < 0.60){
+    // Top strip: very near ceiling (plane ceiling clamp is at y=22-28)
+    dY = 14 + Math.random() * (h * 0.11 - 14);
+  } else {
+    // Bottom strip: skims just above the sea surface
+    dY = wy * 0.91 + Math.random() * (wy * 0.085);
+  }
+
+  S.bubbles.push({
+    x:    canvas.width + 45 + Math.random()*80,
+    y:    dY,
+    r:    dType.r,
+    wob:  Math.random()*Math.PI*2,
+    coll:    false,
+    spawned: true,
+    decoy:   true,
+    lbl:  dType.lbl,
+    col:  dType.col,
+    glow: dType.glow,
+    boost: 0,
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DRAW HELPERS
+// ════════════════════════════════════════════════════════════════
+function drawBg(){
+  const w=canvas.width, h=canvas.height, wy=WY();
+
+  const sg=ctx.createLinearGradient(0,0,0,wy);
+  sg.addColorStop(0,   '#01060d');
+  sg.addColorStop(0.38,'#050b1c');
+  sg.addColorStop(0.72,'#081832');
+  sg.addColorStop(1,   '#0c2248');
+  ctx.fillStyle=sg; ctx.fillRect(0,0,w,wy);
+
+  S.stars.forEach(s=>{
+    s.tw+=0.021;
+    const a=0.15+Math.sin(s.tw)*0.17;
+    ctx.beginPath(); ctx.arc(s.xr*w, s.yr*wy, s.r, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(190,215,255,${a})`; ctx.fill();
+  });
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(canvas.width*0.82, canvas.height*0.10, 22, 0, Math.PI*2);
+  ctx.fillStyle='rgba(220,235,255,0.06)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(canvas.width*0.82+8, canvas.height*0.10-2, 22, 0, Math.PI*2);
+  ctx.fillStyle='rgba(5,10,20,1)'; ctx.fill();
+  ctx.restore();
+
+  const hg=ctx.createLinearGradient(0,wy-50,0,wy+10);
+  hg.addColorStop(0,'rgba(15,90,190,0)');
+  hg.addColorStop(.5,'rgba(15,90,190,0.07)');
+  hg.addColorStop(1,'rgba(15,90,190,0)');
+  ctx.fillStyle=hg; ctx.fillRect(0,wy-50,w,60);
+
+  const sea=ctx.createLinearGradient(0,wy,0,h);
+  sea.addColorStop(0,'#051e2c'); sea.addColorStop(.45,'#031220'); sea.addColorStop(1,'#01080e');
+  ctx.fillStyle=sea; ctx.fillRect(0,wy,w,h-wy);
+
+  ctx.beginPath(); ctx.moveTo(0,wy);
+  for(let x=0;x<=w;x+=4){
+    ctx.lineTo(x, wy+Math.sin(x*0.013+S.woff)*3.2+Math.sin(x*0.025+S.woff*1.9)*1.6);
+  }
+  ctx.strokeStyle='rgba(60,170,240,0.22)'; ctx.lineWidth=2.2; ctx.stroke();
+
+  ctx.beginPath(); ctx.moveTo(0,wy+11);
+  for(let x=0;x<=w;x+=4){
+    ctx.lineTo(x, wy+11+Math.sin(x*0.019+S.woff*0.85+1)*2.2);
+  }
+  ctx.strokeStyle='rgba(30,130,190,0.10)'; ctx.lineWidth=1.5; ctx.stroke();
+
+  for(let i=0;i<4;i++){
+    const sx = ((S.woff*20+i*230)%w);
+    const sg2=ctx.createRadialGradient(sx,wy+8,0,sx,wy+8,60);
+    sg2.addColorStop(0,'rgba(60,160,220,0.07)'); sg2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg2; ctx.fillRect(sx-60,wy,120,30);
+  }
+}
+
+function drawShip(m){
+  const wy=WY(), px=PX();
+  ctx.save(); ctx.translate(m.x, wy);
+  const w=m.w;
+  if(!m.decor && S.phase==='flying'){
+    const dx=Math.abs(m.x-px);
+    const I=Math.max(0,1-dx/(w*2.2));
+    if(I>0.06){ ctx.shadowBlur=22*I; ctx.shadowColor=`rgba(100,190,255,${I*0.55})`; }
+  }
+  if(m.type===0){
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0,28,w*0.58,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#172538';
+    ctx.beginPath();
+    ctx.moveTo(-w*.56,12); ctx.lineTo(w*.56,12);
+    ctx.lineTo(w*.64,26);  ctx.lineTo(-w*.64,26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1e3044'; ctx.fillRect(-w*.50,0,w,14);
+    ctx.fillStyle='rgba(255,255,255,0.04)'; ctx.fillRect(-w*.50,0,w,3);
+    ctx.fillStyle='#162c3e'; ctx.fillRect(w*.14,-19,20,21);
+    ctx.fillStyle='#1a3248'; ctx.fillRect(w*.17,-31,13,13);
+    ctx.strokeStyle='rgba(255,255,255,0.09)'; ctx.lineWidth=1; ctx.setLineDash([10,8]);
+    ctx.beginPath(); ctx.moveTo(-w*.44,7); ctx.lineTo(w*.44,7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(160,200,255,0.22)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(w*.2,-31); ctx.lineTo(w*.2,-44); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*.22,-42); ctx.lineTo(w*.28,-36); ctx.stroke();
+    ctx.strokeStyle='rgba(80,160,220,0.08)'; ctx.lineWidth=2; ctx.setLineDash([15,10]);
+    ctx.beginPath(); ctx.moveTo(-w*.56,18); ctx.lineTo(-w*.56-60,22); ctx.stroke(); ctx.setLineDash([]);
+  } else if(m.type===1){
+    ctx.fillStyle='rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(0,25,w*0.46,6,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111e2c';
+    ctx.beginPath();
+    ctx.moveTo(-w*.44,0); ctx.bezierCurveTo(-w*.41,-8,w*.3,-10,w*.52,0);
+    ctx.lineTo(w*.52,20); ctx.lineTo(-w*.44,20); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1a2d3c';
+    ctx.beginPath(); ctx.ellipse(0,-2,13,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#223648'; ctx.fillRect(-2,-11,4,11);
+    ctx.strokeStyle='rgba(100,170,220,0.10)'; ctx.lineWidth=1.5; ctx.setLineDash([7,5]);
+    ctx.beginPath();
+    ctx.moveTo(w*.52,9); ctx.lineTo(w*.52+40,17);
+    ctx.moveTo(w*.52,14); ctx.lineTo(w*.52+34,22);
+    ctx.stroke(); ctx.setLineDash([]);
+  } else {
+    ctx.fillStyle='rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(0,24,w*0.45,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0b1c2c';
+    ctx.beginPath(); ctx.ellipse(0,13,w*0.48,12,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#122438'; ctx.fillRect(-9,-8,18,23);
+    ctx.beginPath(); ctx.arc(0,-8,9,Math.PI,0); ctx.fill();
+    ctx.strokeStyle='#1a3248'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(4,-8); ctx.lineTo(4,-27); ctx.lineTo(12,-27); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBubble(b){
+  const fy=Math.sin(b.wob)*4.5;
+  ctx.save(); ctx.translate(b.x, b.y+fy);
+  if(b.decoy) ctx.globalAlpha = 0.72;
+
+  const grd=ctx.createRadialGradient(0,0,0,0,0,b.r+22);
+  grd.addColorStop(0,b.glow); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(0,0,b.r+22,0,Math.PI*2); ctx.fill();
+
+  const pulse=0.4+Math.sin(b.wob*1.5)*0.3;
+  ctx.beginPath(); ctx.arc(0,0,b.r+8,0,Math.PI*2);
+  ctx.strokeStyle=b.col.replace('rgb','rgba').replace(')',`,${pulse*0.35})`);
+  ctx.lineWidth=1.5; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2);
+  ctx.fillStyle='rgba(2,6,18,0.80)';
+  ctx.strokeStyle=b.col; ctx.lineWidth=2.5;
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle=b.col; ctx.font='bold 12px "Share Tech Mono",monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowBlur=8; ctx.shadowColor=b.col;
+  ctx.fillText(b.lbl, 0, 0);
+  ctx.shadowBlur=0;
+
+  ctx.globalAlpha=0.4+Math.sin(b.wob*2)*0.3;
+  ctx.font='9px "Share Tech Mono",monospace'; ctx.fillText('▲',0,-b.r-9);
+  ctx.globalAlpha=1; ctx.restore();
+}
+
+function drawPlane(){
+  ctx.save();
+  ctx.translate(PX(), S.py);
+  ctx.rotate(Math.max(-.44, Math.min(.44, S.pvy * 0.054)));
+
+  if(S.flash>0){
+    ctx.shadowBlur=26+S.flash*16;
+    ctx.shadowColor=`rgba(80,210,255,${S.flash*0.92})`;
+  }
+
+  for(let i=0;i<6;i++){
+    const a=(6-i)/6*0.24;
+    ctx.beginPath(); ctx.arc(-32-i*11, 0, 8-i*1.1, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(255,185,50,${a})`; ctx.fill();
+  }
+  const fl=0.45+Math.sin(S.tick*0.42)*0.32;
+  const eg=ctx.createRadialGradient(-30,0,0,-30,0,14);
+  eg.addColorStop(0,`rgba(255,185,40,${fl})`); eg.addColorStop(1,'rgba(255,70,0,0)');
+  ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(-30,0,14,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle='#1560b0';
+  ctx.beginPath(); ctx.ellipse(0,0,30,10,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#2478c8';
+  ctx.beginPath(); ctx.moveTo(28,0); ctx.lineTo(43,-2); ctx.lineTo(43,2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#1e6ec0';
+  ctx.beginPath(); ctx.moveTo(-2,-8); ctx.lineTo(12,-32); ctx.lineTo(22,-32); ctx.lineTo(12,-8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(100,180,255,0.12)';
+  ctx.beginPath(); ctx.moveTo(-2,-8); ctx.lineTo(7,-20); ctx.lineTo(12,-20); ctx.lineTo(5,-8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#104888';
+  ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(5,20); ctx.lineTo(14,20); ctx.lineTo(8,8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#1e6ec0';
+  ctx.beginPath(); ctx.moveTo(-22,-5); ctx.lineTo(-31,-20); ctx.lineTo(-16,-7); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(10,-3,9,6,-0.15,0,Math.PI*2);
+  ctx.fillStyle='rgba(90,205,255,0.85)'; ctx.fill();
+  ctx.strokeStyle='rgba(190,235,255,0.55)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(8,-5,4,2,-0.3,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.fill();
+
+  if(S.phase==='flying'){
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(4,9,20,0.90)';
+    ctx.beginPath(); ctx.roundRect(-22,-54,90,22,5); ctx.fill();
+    ctx.strokeStyle='rgba(80,170,255,0.25)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(-22,-54,90,22,5); ctx.stroke();
+    ctx.fillStyle='#7dd4f8';
+    ctx.font='bold 11px "Share Tech Mono",monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`€${(S.bet*S.mult).toFixed(2)}`,23,-43);
+  }
+  ctx.restore();
+}
+
+function drawZone(){
+  if(S.phase!=='flying') return;
+  const wy=WY(), px=PX();
+  const dist=wy-S.py;
+  if(dist>canvas.height*0.42) return;
+  const fade=Math.min(0.80,(canvas.height*0.42-dist)/(canvas.height*0.20));
+  const pulse=0.5+Math.sin(S.tick*0.15)*0.5;
+  ctx.save(); ctx.globalAlpha=fade;
+  ctx.setLineDash([4,7]);
+  ctx.strokeStyle=`rgba(80,190,255,${0.45+pulse*0.25})`;
+  ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(px, S.py+24); ctx.lineTo(px, wy); ctx.stroke();
+  ctx.setLineDash([]);
+  for(let i=0;i<2;i++){
+    const r=14+i*12+pulse*7;
+    ctx.beginPath(); ctx.arc(px, wy, r, 0, Math.PI*2);
+    ctx.strokeStyle=`rgba(80,190,255,${(0.5-i*0.15)*(0.4+pulse*0.35)})`;
+    ctx.lineWidth=1.2; ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(px,wy,3,0,Math.PI*2);
+  ctx.fillStyle=`rgba(80,190,255,${0.5+pulse*0.4})`; ctx.fill();
+  ctx.restore();
+}
+
+function drawParts(){
+  S.parts.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);
+    ctx.fillStyle=p.col.replace('rgb','rgba').replace(')',`,${p.life*0.9})`);
+    ctx.fill();
+  });
+}
+
+function burst(x,y,col,n,spd){
+  for(let i=0;i<n;i++){
+    const a=Math.PI*2*i/n+Math.random()*0.9, s=(spd||3)+Math.random()*3;
+    S.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,
+      decay:0.021+Math.random()*0.026,r:2+Math.random()*3,col});
+  }
+}
+
+function drawFloats(){
+  floats.forEach(f=>{
+    f.y+=f.vy; f.life-=0.019;
+    ctx.save(); ctx.globalAlpha=f.life;
+    ctx.fillStyle=f.col; ctx.font='bold 20px "Rajdhani",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowBlur=14; ctx.shadowColor=f.col;
+    ctx.fillText(f.txt,f.x,f.y); ctx.restore();
+  });
+  floats=floats.filter(f=>f.life>0);
+}
+
+function drawSpeedLines(){
+  if(S.phase!=='flying' || S.pvy >= 0) return;
+  const alpha=Math.min(0.18, -S.pvy*0.025);
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.strokeStyle='rgba(80,180,255,1)'; ctx.lineWidth=1;
+  const cx=PX(), cy=S.py;
+  for(let i=0;i<8;i++){
+    const angle=(Math.PI*2*i/8)+(S.tick*0.05);
+    const len=40+Math.random()*60;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(angle)*18, cy+Math.sin(angle)*12);
+    ctx.lineTo(cx+Math.cos(angle)*(18+len), cy+Math.sin(angle)*(12+len*0.3));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GAME LOOP
+// ════════════════════════════════════════════════════════════════
+function loop(){
+  requestAnimationFrame(loop);
+  S.tick++; S.woff+=0.017;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawBg();
+
+  if(S.phase==='flying'){
+    const wy=WY(), px=PX();
+
+    // ── Spawn pre-scheduled real bubbles ──────────────────────
+    S.preb.forEach(pb=>{
+      if(!pb.spawned && S.tick>=pb.spawnT){
+        pb.spawned=true;
+        const late=S.tick-pb.spawnT;
+        S.bubbles.push({
+          ...pb,
+          x: canvas.width+45 - late*BSPD
+        });
+      }
+    });
+
+    // ── Spawn pre-scheduled ships ──────────────────────────────
+    S.pres.forEach(ps=>{
+      if(!ps.spawned && S.tick>=ps.spawnT){
+        ps.spawned=true;
+        const late=S.tick-ps.spawnT;
+        S.ships.push({...ps, x: canvas.width+ps.w*0.65 - late*ps.spd });
+      }
+    });
+
+    // ── Continuous ambient decoy stream ───────────────────────
+    // Runs the entire flight — player can NEVER tell when round ends
+    if(S.tick >= S.nextDecoySpawn){
+      S.nextDecoySpawn = S.tick + 18 + Math.floor(Math.random()*35);
+      spawnAmbientDecoy();
+    }
+
+    // ── Physics ───────────────────────────────────────────────
+    S.pvy += GRAV;
+    S.py  += S.pvy;
+    if(S.py<22){ S.py=22; S.pvy=Math.abs(S.pvy)*0.18; }
+    S.flash=Math.max(0,S.flash-0.055);
+
+    // ── Scroll bubbles ─────────────────────────────────────────
+    // All bubbles scroll left at a fixed speed — no Y adjustment.
+    // Real bubbles fire at hitT regardless of visual position.
+    // Decoys travel at their locked Y and never interact with the plane.
+    S.bubbles.forEach(b=>{
+      if(!b.coll){
+        b.x  -= BSPD;
+        b.wob += 0.042;
+      }
+    });
+    S.bubbles=S.bubbles.filter(b=>b.x>-70);
+
+    S.ships.forEach(s=>{ s.x-=s.spd; });
+    S.ships=S.ships.filter(s=>s.x>-s.w-60);
+
+    // Multiplier drifts up
+    S.mult+=0.00048;
+
+    // Particles
+    S.parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.055;p.life-=p.decay;});
+    S.parts=S.parts.filter(p=>p.life>0);
+
+    // ── Bubble collision ───────────────────────────────────────
+    // ONLY real (non-decoy) bubbles can hit the plane.
+    // Collision is triggered by hitT (tick-based), NOT by proximity.
+    // This guarantees every scheduled hit fires at the right moment,
+    // and decoys NEVER interfere no matter how close they pass.
+    S.bubbles.forEach(b=>{
+      if(b.coll || b.decoy) return;   // decoys are completely ignored
+
+      if(S.tick >= b.hitT){
+        b.coll = true;
+        // Snap bubble position to plane for the burst effect
+        const bx = px, by = S.py;
+        S.mult = Math.min(S.mult * b.val, 999);
+        S.pvy  = b.boost;
+        S.flash = 1;
+        burst(bx, by, b.col, 16, 4.5);
+        burst(bx, by, 'rgb(255,255,255)', 8, 3);
+        floats.push({x:bx, y:by, txt:b.lbl, col:b.col, life:1, vy:-1.5});
+        const el = document.getElementById('hud-mult');
+        el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+      }
+    });
+
+    // ── Water hit ─────────────────────────────────────────────
+    if(S.py>=wy-10){
+      const landed=S.ships.find(s=>
+        !s.decor && px>=s.x-s.w*0.54 && px<=s.x+s.w*0.54
+      );
+      burst(px,S.py, landed?'rgb(255,210,50)':'rgb(30,120,200)', landed?22:24, 5);
+      if(!landed) burst(px,S.py,'rgb(200,230,255)',16,3.5);
+      if(landed){
+        burst(px,S.py,'rgb(255,255,180)',10,6);
+        doLand();
+      } else {
+        doSplash();
+      }
+    }
+
+    const frac=(wy-S.py)/wy;
+    document.getElementById('dbar').classList.toggle('hot', frac<0.18);
+
+    updateHUD();
+
+  } else if(S.phase==='idle'){
+    S.parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.055;p.life-=p.decay;});
+    S.parts=S.parts.filter(p=>p.life>0);
+    S.ships.forEach(s=>{s.x-=s.spd*0.38;});
+    S.ships=S.ships.filter(s=>s.x>-s.w-60);
+    if(S.tick%210===0 && S.ships.length<3){
+      S.ships.push({x:canvas.width+120, w:80+Math.random()*70,
+        spd:1+Math.random()*0.9, type:Math.floor(Math.random()*3), decor:true});
+    }
+    document.getElementById('dbar').classList.remove('hot');
+  } else {
+    // 'over' — particles finish, ships freeze
+    S.parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.055;p.life-=p.decay;});
+    S.parts=S.parts.filter(p=>p.life>0);
+    document.getElementById('dbar').classList.remove('hot');
+  }
+
+  drawZone();
+  S.ships.forEach(drawShip);
+  S.bubbles.forEach(b=>{ if(!b.coll) drawBubble(b); });
+  drawParts();
+  drawFloats();
+  drawSpeedLines();
+  if(S.phase!=='idle') drawPlane();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONTROL
+// ════════════════════════════════════════════════════════════════
+function startGame(){
+  const betEl=document.getElementById('bet');
+  const bet=parseFloat(betEl.value);
+  if(isNaN(bet)||bet<0.10) return;
+  if(bet>S.balance){ flashBal(); return; }
+
+  const willWin=Math.random()<WIN_P[diff];
+  const {preb,pres}=buildRound(willWin);
+
+  Object.assign(S,{
+    phase:'flying', tick:0,
+    bet, balance:S.balance-bet, mult:1.00,
+    py:canvas.height*0.44, pvy:-2.8, flash:0,
+    bubbles:[], ships:[], parts:[],
+    preb, pres,
+    nextDecoySpawn: 8,   // first ambient decoy very soon after takeoff
+  });
+  floats=[];
+  S.ships=[];
+
+  document.getElementById('intro').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('btn-fly').disabled=true;
+  betEl.disabled=true;
+  updateBal();
+  hideMsg();
+}
+
+function doLand(){
+  S.phase='over';
+  const win=parseFloat((S.bet*S.mult).toFixed(2));
+  S.balance+=win;
+  addHist(S.mult,true);
+  showMsg('🛬 LANDED!',`+€${win.toFixed(2)}  ·  ×${S.mult.toFixed(2)}`,'#ffe050');
+  endRound();
+}
+
+function doSplash(){
+  S.phase='over';
+  const nm=S.ships.find(s=>!s.decor);
+  const gapPx=nm ? Math.max(0,Math.round(nm.x-PX()-nm.w*0.54)) : null;
+  const subMsg= (gapPx!==null && gapPx<160)
+    ? `SO CLOSE — ${gapPx}px away · Lost €${S.bet.toFixed(2)}`
+    : `Lost €${S.bet.toFixed(2)} · ×${S.mult.toFixed(2)}`;
+  addHist(S.mult,false);
+  showMsg('💥 CRASHED', subMsg, '#e05050');
+  endRound();
+}
+
+function endRound(){
+  updateBal();
+  const btn=document.getElementById('btn-fly');
+  btn.disabled=false;
+  btn.textContent='✈ BET AGAIN';
+  document.getElementById('bet').disabled=false;
+}
+
+function updateHUD(){
+  const m=S.mult.toFixed(2);
+  const win=(S.bet*S.mult).toFixed(2);
+  const wy=WY();
+  const frac=Math.max(0,(wy-S.py)/wy);
+  const alt=frac>0.55?'HIGH':frac>0.30?'MED':frac>0.12?'LOW':'⚠ DIVE';
+  const altCol=frac<0.18?'#e05050':frac<0.32?'#e6a817':'#3dc86a';
+  document.getElementById('hud-mult').textContent=`×${m}`;
+  document.getElementById('hud-win').textContent=`€${win}`;
+  document.getElementById('s-mult').textContent=`×${m}`;
+  document.getElementById('s-win').textContent=`€${win}`;
+  document.getElementById('s-alt').textContent=alt;
+  document.getElementById('s-alt').style.color=altCol;
+}
+
+function updateBal(){
+  document.getElementById('bal-val').textContent=
+    S.balance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+
+function flashBal(){
+  const el=document.getElementById('bal-val');
+  el.style.color='#e05050';
+  setTimeout(()=>el.style.color='#3dc86a',600);
+}
+
+function showMsg(main,sub,col){
+  document.getElementById('msg-main').textContent=main;
+  document.getElementById('msg-main').style.color=col;
+  document.getElementById('msg-sub').textContent=sub;
+  const el=document.getElementById('msg');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3400);
+}
+function hideMsg(){ document.getElementById('msg').classList.remove('show'); }
+
+function addHist(mult,win){
+  const row=document.getElementById('hist');
+  const b=document.createElement('div');
+  b.className='hbadge '+(win?'w':'l');
+  b.textContent=`×${mult.toFixed(2)}`;
+  row.prepend(b);
+  while(row.children.length>8) row.removeChild(row.lastChild);
+}
+
+function adjBet(f){
+  const inp=document.getElementById('bet');
+  inp.value=Math.max(0.10,parseFloat((parseFloat(inp.value||0.10)*f).toFixed(2))).toFixed(2);
+}
+
+function setDiff(d){
+  if(S.phase==='flying') return;
+  diff=d;
+  ['easy','medium','hard'].forEach(k=>{
+    document.getElementById('d-'+k).className=
+      'diff-btn'+(k===d?' act-'+k[0]:'');
+  });
+}
+
+updateBal();
+loop();
+</script>
+</body>
+</html>
