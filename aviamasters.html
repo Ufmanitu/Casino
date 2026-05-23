@@ -377,39 +377,48 @@ function buildRound(win){
   return {preb, pres};
 }
 
-// ── Spawn a random ambient decoy bubble ──────────────────────────
-// Decoys live in two strips the plane NEVER occupies:
-//   Top strip    — above the highest point the plane can boost to
-//   Bottom strip — just above the waterline, below where plane glides
-// This keeps the sky busy throughout the whole flight without ever
-// visually crossing the plane's corridor.
-function spawnAmbientDecoy(){
-  const wy = WY();
-  const h  = canvas.height;
-  const dType = DECOY_TYPES[Math.floor(Math.random()*DECOY_TYPES.length)];
+// ── Spawn a wave of ambient decoy bubbles ────────────────────────
+// Decoys are spawned with a Y-exclusion zone around the plane so they
+// never start near its current altitude. As they scroll toward the
+// plane's X column a per-tick repulsion pushes them further away,
+// ensuring they are always visually clear of the aircraft.
+function spawnAmbientDecoys(){
+  const wy   = WY();
+  const w    = canvas.width;
+  const n    = 2 + Math.floor(Math.random()*3);   // 2-4 per wave
+  const baseX = w + 45;
+  const SAFE  = 110;   // min vertical gap from plane at birth
+  const planeY = (S.phase === 'flying') ? S.py : wy * 0.44;
 
-  let dY;
-  if(Math.random() < 0.60){
-    // Top strip: very near ceiling (plane ceiling clamp is at y=22-28)
-    dY = 14 + Math.random() * (h * 0.11 - 14);
-  } else {
-    // Bottom strip: skims just above the sea surface
-    dY = wy * 0.91 + Math.random() * (wy * 0.085);
+  for(let i = 0; i < n; i++){
+    const dType = DECOY_TYPES[Math.floor(Math.random()*DECOY_TYPES.length)];
+    // Pick a Y that is at least SAFE px away from the plane's current Y.
+    // Re-roll up to 12 times; if still too close, clamp it above or below.
+    let dY, tries = 0;
+    do {
+      dY = 22 + Math.random() * (wy - 50);
+      tries++;
+    } while (Math.abs(dY - planeY) < SAFE && tries < 12);
+    // Hard-push if still inside exclusion zone
+    if (Math.abs(dY - planeY) < SAFE) {
+      dY = (dY < planeY) ? planeY - SAFE - 10 : planeY + SAFE + 10;
+      dY = Math.max(22, Math.min(wy - 22, dY));
+    }
+
+    S.bubbles.push({
+      x:    baseX + i * 85 + Math.random()*50,
+      y:    dY,
+      r:    dType.r,
+      wob:  Math.random()*Math.PI*2,
+      coll:    false,
+      spawned: true,
+      decoy:   true,
+      lbl:  dType.lbl,
+      col:  dType.col,
+      glow: dType.glow,
+      boost: 0,
+    });
   }
-
-  S.bubbles.push({
-    x:    canvas.width + 45 + Math.random()*80,
-    y:    dY,
-    r:    dType.r,
-    wob:  Math.random()*Math.PI*2,
-    coll:    false,
-    spawned: true,
-    decoy:   true,
-    lbl:  dType.lbl,
-    col:  dType.col,
-    glow: dType.glow,
-    boost: 0,
-  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -709,10 +718,11 @@ function loop(){
     });
 
     // ── Continuous ambient decoy stream ───────────────────────
-    // Runs the entire flight — player can NEVER tell when round ends
+    // Waves of 2-4 decoys every 14-28 ticks — sky stays packed.
+    // Runs the entire flight so round-end is never telegraphed.
     if(S.tick >= S.nextDecoySpawn){
-      S.nextDecoySpawn = S.tick + 18 + Math.floor(Math.random()*35);
-      spawnAmbientDecoy();
+      S.nextDecoySpawn = S.tick + 14 + Math.floor(Math.random()*22);
+      spawnAmbientDecoys();
     }
 
     // ── Physics ───────────────────────────────────────────────
@@ -722,13 +732,31 @@ function loop(){
     S.flash=Math.max(0,S.flash-0.055);
 
     // ── Scroll bubbles ─────────────────────────────────────────
-    // All bubbles scroll left at a fixed speed — no Y adjustment.
-    // Real bubbles fire at hitT regardless of visual position.
-    // Decoys travel at their locked Y and never interact with the plane.
+    // Real bubbles scroll at fixed speed — hitT fires collision.
+    // Decoys also scroll but get actively pushed away from the plane
+    // as they enter the approach window so they never look close.
+    const REPEL_DIST  = 280;   // px ahead of plane where push starts
+    const MIN_GAP     = 95;    // minimum vertical clearance to enforce
+    const PUSH_STRENGTH = 0.18;
     S.bubbles.forEach(b=>{
       if(!b.coll){
         b.x  -= BSPD;
         b.wob += 0.042;
+        if(b.decoy){
+          const aheadX = b.x - px;   // positive = bubble still to the right of plane
+          if(aheadX > 0 && aheadX < REPEL_DIST){
+            const dy  = b.y - S.py;
+            const gap = Math.abs(dy);
+            if(gap < MIN_GAP){
+              // Ease strength: full push when right at plane X, fades at REPEL_DIST
+              const t      = 1 - (aheadX / REPEL_DIST);
+              const force  = (MIN_GAP - gap) * PUSH_STRENGTH * t;
+              const dir    = dy >= 0 ? 1 : -1;
+              b.y += dir * force;
+              b.y  = Math.max(22, Math.min(WY() - 22, b.y));
+            }
+          }
+        }
       }
     });
     S.bubbles=S.bubbles.filter(b=>b.x>-70);
@@ -834,6 +862,28 @@ function startGame(){
   });
   floats=[];
   S.ships=[];
+
+  // Pre-fill the sky with decoys — exclude the plane's starting Y band
+  const wy0    = canvas.height * 0.80;
+  const startY = canvas.height * 0.44;   // plane's initial Y
+  const SAFE0  = 110;
+  for(let i=0;i<8;i++){
+    const dType = DECOY_TYPES[Math.floor(Math.random()*DECOY_TYPES.length)];
+    let dy0, tr=0;
+    do { dy0 = 22 + Math.random()*(wy0-50); tr++; }
+    while(Math.abs(dy0-startY)<SAFE0 && tr<12);
+    if(Math.abs(dy0-startY)<SAFE0)
+      dy0 = dy0<startY ? startY-SAFE0-10 : startY+SAFE0+10;
+    dy0 = Math.max(22, Math.min(wy0-22, dy0));
+    S.bubbles.push({
+      x:    canvas.width * 0.30 + Math.random()*(canvas.width * 0.80),
+      y:    dy0,
+      r:    dType.r,
+      wob:  Math.random()*Math.PI*2,
+      coll:false, spawned:true, decoy:true,
+      lbl:dType.lbl, col:dType.col, glow:dType.glow, boost:0,
+    });
+  }
 
   document.getElementById('intro').style.display='none';
   document.getElementById('hud').style.display='flex';
